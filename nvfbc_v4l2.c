@@ -109,7 +109,7 @@ NvFBC_SessionData create_session(NvFBC_InitData init_data, void **frame_ptr) {
     memset(&setupParams, 0, sizeof(setupParams));
 
     setupParams.dwVersion     = NVFBC_TOSYS_SETUP_PARAMS_VER;
-    setupParams.eBufferFormat = NVFBC_BUFFER_FORMAT_RGBA;
+    setupParams.eBufferFormat = NVFBC_BUFFER_FORMAT_BGRA;
     setupParams.ppBuffer      = frame_ptr;
     setupParams.bWithDiffMap  = NVFBC_FALSE;
 

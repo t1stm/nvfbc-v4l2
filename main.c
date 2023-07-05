@@ -60,8 +60,11 @@ int main(int argc, char* argv[]) {
     int32_t v4l2_device = open_device(output_device);
     set_device_format(v4l2_device, nvfbc_data.width, nvfbc_data.height);
 
-    for (int i = 0; i < 128; i++) {
+    printf("Starting capture.");
+    uint32_t buffer_size = (nvfbc_data.width * nvfbc_data.height) * 4;
+    for (;;) {
         capture_frame(nvfbc_session);
+        write_frame(v4l2_device, frame_ptr, buffer_size);
     }
 
     destroy_session(nvfbc_session);
