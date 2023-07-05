@@ -51,14 +51,6 @@ void set_device_format(int32_t file_descriptor, uint32_t width, uint32_t height)
     close(file_descriptor);
 }
 
-void swap_rgba_bgra(void** frame, uint32_t size) {
-    byte* data = *frame;
-    for (int i = 0; i < size; i += 4) {
-        uint32_t* pixel = (uint32_t*)(data + i);
-        *pixel = (*pixel & 0xFF00FF00) | ((*pixel & 0x00FF0000) >> 16) | ((*pixel & 0x000000FF) << 16);
-    }
-}
-
 void write_frame(int32_t file_descriptor, void** frame, uint32_t size) {
     write(file_descriptor, *frame, size);
 }
