@@ -27,7 +27,6 @@ typedef struct {
     int32_t fps;
     bool push_model;
     bool direct_capture;
-    int64_t desktop;
 } CaptureSettings;
 
 typedef struct {
@@ -52,8 +51,8 @@ static PNVFBCCREATEINSTANCE NvFBCCreateInstance_ptr = NULL;
 static NVFBC_API_FUNCTION_LIST function_list;
 
 NvFBC_InitData load_library();
-NvFBC_SessionData create_session(NvFBC_InitData init_data, void **frame_ptr);
-void capture_frame(NvFBC_SessionData session_data);
+NvFBC_SessionData create_session(NvFBC_InitData init_data, CaptureSettings capture_settings, void **frame_ptr);
+void capture_frame(NvFBC_SessionData *session_data);
 void destroy_session(NvFBC_SessionData session_data);
 
 #endif

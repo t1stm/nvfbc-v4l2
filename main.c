@@ -7,16 +7,22 @@
 int main(int argc, char* argv[]) {
     int32_t opt;
     int32_t output_device = -1;
-    CaptureSettings capture_settings;
+    CaptureSettings capture_settings = {
+            .push_model = true,
+            .direct_capture = true,
+            .show_cursor = true,
+            .fps = 60
+    };
 
     printf("Initializing settings.\n");
 
     struct option long_options[] = {
             {"output-device", required_argument, NULL, 'o'},
             {"screen", required_argument, NULL, 's'},
-            {"fps", optional_argument, NULL, 'f'},
+            {"fps", required_argument, NULL, 'f'},
             {"push-model", no_argument, NULL, 'p'},
             {"direct-capture", no_argument, NULL, 'd'},
+            {"no-cursor", no_argument, NULL, 'c'},
             {NULL, 0, NULL, 0}
     };
 
@@ -35,17 +41,26 @@ int main(int argc, char* argv[]) {
             case 'f':
                 capture_settings.fps = atoi(optarg);
                 break;
+
             case 'p':
-                capture_settings.push_model = true;
+                capture_settings.push_model = false;
                 break;
             case 'd':
-                capture_settings.direct_capture = true;
+                capture_settings.direct_capture = false;
                 break;
+            case 'c':
+                capture_settings.show_cursor = false;
+                break;
+
             default:
                 printf("Invalid option: -%c", optopt);
                 exit(EXIT_FAILURE);
         }
     }
+
+    printf("Output device: /dev/video%u\n", output_device);
+    printf("Screen: %i\n", capture_settings.screen);
+
 
     printf("Loading the NvFBC library.\n");
 
@@ -53,7 +68,7 @@ int main(int argc, char* argv[]) {
     void** frame_ptr = (void**) &frame;
 
     NvFBC_InitData nvfbc_data = load_library();
-    NvFBC_SessionData nvfbc_session = create_session(nvfbc_data, frame_ptr);
+    NvFBC_SessionData nvfbc_session = create_session(nvfbc_data, capture_settings, frame_ptr);
 
     printf("Opening the V4L2 loopback device.\n");
 
@@ -62,8 +77,9 @@ int main(int argc, char* argv[]) {
 
     printf("Starting capture.");
     uint32_t buffer_size = (nvfbc_data.width * nvfbc_data.height) * 4;
+
     for (;;) {
-        capture_frame(nvfbc_session);
+        capture_frame(&nvfbc_session);
         write_frame(v4l2_device, frame_ptr, buffer_size);
     }
 

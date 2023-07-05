@@ -43,7 +43,7 @@ NvFBC_InitData load_library() {
     return result;
 }
 
-NvFBC_SessionData create_session(NvFBC_InitData init_data, void **frame_ptr) {
+NvFBC_SessionData create_session(NvFBC_InitData init_data, CaptureSettings capture_settings, void **frame_ptr) {
     NVFBCSTATUS nvfbc_status;
 
     NVFBC_SESSION_HANDLE fbcHandle;
@@ -95,10 +95,16 @@ NvFBC_SessionData create_session(NvFBC_InitData init_data, void **frame_ptr) {
 
     createCaptureParams.dwVersion     = NVFBC_CREATE_CAPTURE_SESSION_PARAMS_VER;
     createCaptureParams.eCaptureType  = NVFBC_CAPTURE_TO_SYS;
-    createCaptureParams.bWithCursor   = NVFBC_TRUE;
     createCaptureParams.captureBox    = capture_box;
     createCaptureParams.frameSize     = capture_size;
-    createCaptureParams.eTrackingType = NVFBC_TRACKING_SCREEN;
+
+    createCaptureParams.bRoundFrameSize     = NVFBC_TRUE;
+    createCaptureParams.dwOutputId          = capture_settings.screen;
+    createCaptureParams.eTrackingType       = capture_settings.screen == -1 ? NVFBC_TRACKING_SCREEN : NVFBC_TRACKING_OUTPUT;
+    createCaptureParams.bWithCursor         = capture_settings.show_cursor ? NVFBC_TRUE : NVFBC_FALSE;
+    createCaptureParams.bPushModel          = capture_settings.push_model ? NVFBC_TRUE : NVFBC_FALSE;
+    createCaptureParams.bAllowDirectCapture = capture_settings.direct_capture ? NVFBC_TRUE : NVFBC_FALSE;
+    createCaptureParams.dwSamplingRateMs    = (int) lround(1000.0 / capture_settings.fps);
 
     nvfbc_status = function_list.nvFBCCreateCaptureSession(fbcHandle, &createCaptureParams);
     if (nvfbc_status != NVFBC_SUCCESS) {
@@ -154,7 +160,7 @@ void destroy_session(NvFBC_SessionData session_data) {
     }
 }
 
-void capture_frame(NvFBC_SessionData session_data) {
+void capture_frame(NvFBC_SessionData *session_data) {
     NVFBCSTATUS nvfbc_status;
     NVFBC_TOSYS_GRAB_FRAME_PARAMS grabParams;
     NVFBC_FRAME_GRAB_INFO frameInfo;
@@ -171,9 +177,9 @@ void capture_frame(NvFBC_SessionData session_data) {
     grabParams.pFrameGrabInfo = &frameInfo;
 
     // Captures a frame.
-    nvfbc_status = function_list.nvFBCToSysGrabFrame(session_data.fbcHandle, &grabParams);
+    nvfbc_status = function_list.nvFBCToSysGrabFrame(session_data->fbcHandle, &grabParams);
     if (nvfbc_status != NVFBC_SUCCESS) {
-        fprintf(stderr, "Capturing frame failed: '%s'\n", function_list.nvFBCGetLastErrorStr(session_data.fbcHandle));
+        fprintf(stderr, "Capturing frame failed: '%s'\n", function_list.nvFBCGetLastErrorStr(session_data->fbcHandle));
         exit(EXIT_FAILURE);
     }
 }
