@@ -36,9 +36,11 @@ NvFBC_InitData load_library() {
 
     NvFBC_InitData result = {
             .NvFBCCreateInstance_ptr = NvFBCCreateInstance_ptr,
+            .X_display = dpy,
+
+            // Replaced if screen is specified.
             .width = framebufferWidth,
-            .height = framebufferHeight,
-            .X_display = dpy
+            .height = framebufferHeight
     };
     return result;
 }
@@ -53,8 +55,8 @@ NvFBC_SessionData create_session(NvFBC_InitData init_data, CaptureSettings captu
     NVFBC_TOSYS_SETUP_PARAMS setupParams;
 
     NVFBC_BOX capture_box = {
-            .x = init_data.offset_x,
-            .y = init_data.offset_y,
+            .x = 0,
+            .y = 0,
 
             .w = init_data.width,
             .h = init_data.height
@@ -98,8 +100,8 @@ NvFBC_SessionData create_session(NvFBC_InitData init_data, CaptureSettings captu
     createCaptureParams.captureBox    = capture_box;
     createCaptureParams.frameSize     = capture_size;
 
-    createCaptureParams.bRoundFrameSize     = NVFBC_TRUE;
-    createCaptureParams.dwOutputId          = capture_settings.screen;
+    createCaptureParams.bRoundFrameSize     = NVFBC_FALSE;
+    createCaptureParams.dwOutputId          = init_data.display_id;
     createCaptureParams.eTrackingType       = capture_settings.screen == -1 ? NVFBC_TRACKING_SCREEN : NVFBC_TRACKING_OUTPUT;
     createCaptureParams.bWithCursor         = capture_settings.show_cursor ? NVFBC_TRUE : NVFBC_FALSE;
     createCaptureParams.bPushModel          = capture_settings.push_model ? NVFBC_TRUE : NVFBC_FALSE;

@@ -17,6 +17,7 @@
 
 #include <X11/Xlib.h>
 #include <X11/Xatom.h>
+#include <X11/extensions/Xrandr.h>
 
 #include "NvFBC.h"
 #include "defines.h"
@@ -33,10 +34,15 @@ typedef struct {
     PNVFBCCREATEINSTANCE NvFBCCreateInstance_ptr;
     Display* X_display;
 
+    uint32_t fr_width;
+    uint32_t fr_height;
+
     uint32_t width;
     uint32_t height;
     uint32_t offset_x;
     uint32_t offset_y;
+
+    uint64_t display_id;
 } NvFBC_InitData;
 
 typedef struct {
