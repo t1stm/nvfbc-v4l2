@@ -8,6 +8,8 @@
 
 static bool quit_program = false;
 
+void show_help();
+
 void interrupt_signal() {
     printf("Ctrl+C pressed. Exiting.\n");
     quit_program = true;
@@ -24,8 +26,6 @@ int main(int argc, char* argv[]) {
             .fps = 60
     };
 
-    printf("Initializing settings.\n");
-
     struct option long_options[] = {
             {"output-device", required_argument, NULL, 'o'},
             {"screen", required_argument, NULL, 's'},
@@ -34,10 +34,11 @@ int main(int argc, char* argv[]) {
             {"direct-capture", no_argument, NULL, 'd'},
             {"no-cursor", no_argument, NULL, 'c'},
             {"list-screens", no_argument, NULL, 'l'},
+            {"help", no_argument, NULL, 'h'},
             {NULL, 0, NULL, 0}
     };
 
-    while ((opt = getopt_long(argc, argv, "o:s:f:pdc:l", long_options, NULL)) != -1) {
+    while ((opt = getopt_long(argc, argv, "o:s:f:pdc:l:h", long_options, NULL)) != -1) {
         int32_t temporary;
         switch (opt) {
             case 0:
@@ -69,10 +70,21 @@ int main(int argc, char* argv[]) {
                 list = true;
                 break;
 
+            case 'h':
+                show_help();
+                exit(EXIT_SUCCESS);
+
             default:
-                printf("Invalid option: -%c", optopt);
+                printf("Invalid argument: -%c\n", optopt);
+                printf("To see all available arguments use the -h or --help arguments.\n");
                 exit(EXIT_FAILURE);
         }
+    }
+
+    if (output_device == -1) {
+        printf("Error: Required argument \'output-device\' not specified.\n");
+        printf("To see all available arguments use the -h or --help arguments.\n");
+        exit(EXIT_FAILURE);
     }
 
     printf("Loading the NvFBC library.\n");
@@ -125,4 +137,17 @@ int main(int argc, char* argv[]) {
 
     destroy_session(nvfbc_session);
     return EXIT_SUCCESS;
+}
+
+void show_help() {
+    printf("Usage: nvfbc-v4l2 [options]\n");
+    printf("Options:\n");
+    printf("  -o, --output-device <device>  REQUIRED: Sets the V4L2 output device number.\n");
+    printf("  -s, --screen <screen>         Sets the requested X screen.\n");
+    printf("  -f, --fps <fps>               Sets the frames per second.\n");
+    printf("  -p, --no-push-model           Disables push model.\n");
+    printf("  -d, --direct-capture          Enables direct capture (warning: causes cursor issues when a screen is selected)\n");
+    printf("  -c, --no-cursor               Hides the cursor.\n");
+    printf("  -l, --list-screens            Lists available screens.\n");
+    printf("  -h, --help                    Shows this help message.\n");
 }
