@@ -11,7 +11,7 @@ static bool quit_program = false;
 void show_help();
 
 void interrupt_signal() {
-    printf("Ctrl+C pressed. Exiting.\n");
+    printf("\nCtrl+C pressed. Exiting.\n");
     quit_program = true;
 }
 
@@ -125,7 +125,7 @@ int main(int argc, char* argv[]) {
     int32_t v4l2_device = open_device(output_device);
     set_device_format(v4l2_device, nvfbc_data.width, nvfbc_data.height);
 
-    printf("Starting capture.\n");
+    printf("Starting capture. Press CTRL+C to exit. \n");
     uint32_t buffer_size = (nvfbc_data.width * nvfbc_data.height) * 4 /* Bytes per pixel */;
 
     signal(SIGINT, interrupt_signal);
