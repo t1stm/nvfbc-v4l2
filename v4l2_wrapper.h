@@ -54,7 +54,7 @@ void set_device_format(int32_t file_descriptor, uint32_t width, uint32_t height,
 
     format.fmt.pix.width = width;
     format.fmt.pix.height = height;
-    format.fmt.pix.pixelformat = V4L2_PIX_FMT_RGBA444;
+    format.fmt.pix.pixelformat = get_v4l2_pixel_fmt(pixel_fmt);
     format.fmt.pix.field = V4L2_FIELD_NONE;
 
     if (ioctl(file_descriptor, VIDIOC_S_FMT, &format) >= 0) return;
