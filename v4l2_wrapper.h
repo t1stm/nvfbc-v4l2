@@ -27,7 +27,21 @@ int32_t open_device(int32_t output_device) {
     return file_descriptor;
 }
 
-void set_device_format(int32_t file_descriptor, uint32_t width, uint32_t height) {
+static uint32_t get_v4l2_pixel_fmt(enum Pixel_Format pixel_fmt) {
+    switch (pixel_fmt) {
+        case YUV_420:
+            return V4L2_PIX_FMT_YUV420;
+        case RGB_24:
+            return V4L2_PIX_FMT_RGB24;
+        case RGBA_444:
+            return V4L2_PIX_FMT_RGBA444;
+
+        default:
+            exit(EXIT_FAILURE);
+    }
+}
+
+void set_device_format(int32_t file_descriptor, uint32_t width, uint32_t height, enum Pixel_Format pixel_fmt) {
     struct v4l2_format format;
     memset(&format, 0, sizeof(format));
     format.type = V4L2_BUF_TYPE_VIDEO_OUTPUT;
@@ -40,7 +54,7 @@ void set_device_format(int32_t file_descriptor, uint32_t width, uint32_t height)
 
     format.fmt.pix.width = width;
     format.fmt.pix.height = height;
-    format.fmt.pix.pixelformat = V4L2_PIX_FMT_RGBA444;
+    format.fmt.pix.pixelformat = get_v4l2_pixel_fmt(pixel_fmt);
     format.fmt.pix.field = V4L2_FIELD_NONE;
 
     if (ioctl(file_descriptor, VIDIOC_S_FMT, &format) >= 0) return;

@@ -28,7 +28,7 @@ typedef struct {
     int32_t fps;
     bool push_model;
     bool direct_capture;
-} CaptureSettings;
+} Capture_Settings;
 
 typedef struct {
     Display *X_display;
@@ -55,9 +55,24 @@ static void *nvfbc_lib = NULL;
 static PNVFBCCREATEINSTANCE NvFBCCreateInstance_ptr = NULL;
 static NVFBC_API_FUNCTION_LIST function_list;
 
+static enum _NVFBC_BUFFER_FORMAT get_nvfbc_pixel_format(enum Pixel_Format pixel_fmt) {
+    switch (pixel_fmt) {
+        case YUV_420:
+            return NVFBC_BUFFER_FORMAT_NV12;
+        case RGB_24:
+            return NVFBC_BUFFER_FORMAT_RGB;
+        case RGBA_444:
+            return NVFBC_BUFFER_FORMAT_BGRA;
+
+        default:
+            exit(EXIT_FAILURE);
+    }
+}
+
 NvFBC_InitData load_libraries();
 
-NvFBC_SessionData create_session(NvFBC_InitData init_data, CaptureSettings capture_settings, void **frame_ptr);
+NvFBC_SessionData
+create_session(NvFBC_InitData init_data, Capture_Settings capture_settings, void **frame_ptr, enum Pixel_Format pixel_fmt);
 
 void capture_frame(NvFBC_SessionData *session_data);
 

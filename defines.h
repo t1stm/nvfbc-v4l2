@@ -16,4 +16,11 @@ typedef byte bool;
 #define NVFBC_LIB_NAME "libnvidia-fbc.so.1"
 #endif
 
+enum Pixel_Format {
+    YUV_420,
+    RGB_24,
+    RGBA_444,
+    Pixel_Fmt_None
+};
+
 #endif

@@ -5,6 +5,7 @@
 #include "v4l2_wrapper.h"
 #include "nvfbc_v4l2.h"
 #include "xrandr_wrapper.h"
+#include "pixel_fmt_tools.h"
 
 static bool quit_program = false;
 
@@ -15,30 +16,57 @@ void interrupt_signal() {
     quit_program = true;
 }
 
+enum Pixel_Format string_to_pixel_fmt(char* string) {
+    return
+    strcmp(string, "rgb") == 0 ? RGB_24 :
+    strcmp(string, "yuv420") == 0 ? YUV_420 :
+    strcmp(string, "rgba") == 0 ? RGBA_444 : Pixel_Fmt_None;
+}
+
+uint32_t get_pixel_buffer_size(uint32_t width, uint32_t height, enum Pixel_Format pixel_fmt) {
+    assert(pixel_fmt != Pixel_Fmt_None);
+
+    switch (pixel_fmt) {
+        case YUV_420:
+            return lround((width * height) * 1.5);
+        case RGB_24:
+            return (width * height) * 3;
+        case RGBA_444:
+            return (width * height) * 4;
+
+        default:
+            fprintf(stderr, "Invalid pixel format in buffer size calculator.\n");
+            exit(EXIT_FAILURE);
+    }
+}
+
 int main(int argc, char *argv[]) {
     bool list = false;
     int32_t opt;
     int32_t output_device = -1;
-    CaptureSettings capture_settings = {
+    Capture_Settings capture_settings = {
             .push_model = true,
             .direct_capture = false,
             .show_cursor = true,
             .fps = 60
     };
 
+    enum Pixel_Format pixel_fmt = RGB_24;
+
     struct option long_options[] = {
             {"output-device",  required_argument, NULL, 'o'},
             {"screen",         required_argument, NULL, 's'},
+            {"pixel_format",   required_argument, NULL, 'p'},
             {"fps",            required_argument, NULL, 'f'},
-            {"no-push-model",  no_argument,       NULL, 'p'},
+            {"no-push-model",  no_argument,       NULL, 'n'},
             {"direct-capture", no_argument,       NULL, 'd'},
             {"no-cursor",      no_argument,       NULL, 'c'},
             {"list-screens",   no_argument,       NULL, 'l'},
             {"help",           no_argument,       NULL, 'h'},
-            {NULL, 0,                             NULL, 0}
+            {NULL,             0,                 NULL, 0}
     };
 
-    while ((opt = getopt_long(argc, argv, "o:s:f:pdc:l:h", long_options, NULL)) != -1) {
+    while ((opt = getopt_long(argc, argv, "o:s:f:ndclhp:", long_options, NULL)) != -1) {
         int32_t temporary;
         switch (opt) {
             case 0:
@@ -53,8 +81,14 @@ int main(int argc, char *argv[]) {
             case 'f':
                 capture_settings.fps = atoi(optarg);
                 break;
-
             case 'p':
+                pixel_fmt = string_to_pixel_fmt(optarg);
+                if (pixel_fmt != Pixel_Fmt_None) break;
+
+                fprintf(stderr, "Invalid pixel format specified: --pixel_format = %s\n", optarg);
+                exit(EXIT_FAILURE);
+
+            case 'n':
                 capture_settings.push_model = false;
                 break;
             case 'd':
@@ -119,23 +153,38 @@ int main(int argc, char *argv[]) {
         nvfbc_data.display_id = selected_screen.id;
     }
 
-    NvFBC_SessionData nvfbc_session = create_session(nvfbc_data, capture_settings, frame_ptr);
+    NvFBC_SessionData nvfbc_session = create_session(nvfbc_data, capture_settings, frame_ptr, pixel_fmt);
     printf("Opening the V4L2 loopback device.\n");
 
     int32_t v4l2_device = open_device(output_device);
-    set_device_format(v4l2_device, nvfbc_data.width, nvfbc_data.height);
+    set_device_format(v4l2_device, nvfbc_data.width, nvfbc_data.height, pixel_fmt);
 
     printf("Starting capture. Press CTRL+C to exit. \n");
-    uint32_t buffer_size = (nvfbc_data.width * nvfbc_data.height) * 4 /* Bytes per pixel */;
+    uint32_t buffer_size = get_pixel_buffer_size(nvfbc_data.width, nvfbc_data.height, pixel_fmt);
 
+    NvFBC_SessionData* session_pointer = &nvfbc_session;
     signal(SIGINT, interrupt_signal);
+
+    YUV_420_Data* yuv_data = NULL;
     for (;;) {
         if (quit_program == true) break;
-        capture_frame(&nvfbc_session);
+        capture_frame(session_pointer);
+        if (pixel_fmt == YUV_420) {
+            if (yuv_data == NULL) {
+                yuv_data = (YUV_420_Data*) malloc(sizeof(YUV_420_Data));
+                memset(yuv_data, 0, sizeof(YUV_420_Data));
+            }
+            inplace_nv12_to_yuv420p(*frame_ptr, nvfbc_data.width, nvfbc_data.height, yuv_data);
+        }
         write_frame(v4l2_device, frame_ptr, buffer_size);
     }
 
     destroy_session(nvfbc_session);
+    if (yuv_data != NULL) {
+        free(yuv_data->u_plane);
+        free(yuv_data->y_plane);
+        free(yuv_data);
+    }
     return EXIT_SUCCESS;
 }
 
@@ -144,9 +193,10 @@ void show_help() {
     printf("Options:\n");
     printf("  -o, --output-device <device>  REQUIRED: Sets the V4L2 output device number.\n");
     printf("  -s, --screen <screen>         Sets the requested X screen.\n");
+    printf("  -p, --pixel_format <pix_fmt>  Sets the wanted pixel format. Allowed values: 'rgb' (Default), 'yuv420', 'rgba'\n");
     printf("  -f, --fps <fps>               Sets the frames per second.\n");
-    printf("  -p, --no-push-model           Disables push model.\n");
-    printf("  -d, --direct-capture          Enables direct capture (warning: causes cursor issues when a screen is selected)\n");
+    printf("  -n, --no-push-model           Disables push model.\n");
+    printf("  -d, --direct-capture          Enables direct capture. (warning: causes cursor issues when a screen is selected)\n");
     printf("  -c, --no-cursor               Hides the cursor.\n");
     printf("  -l, --list-screens            Lists available screens.\n");
     printf("  -h, --help                    Shows this help message.\n");
