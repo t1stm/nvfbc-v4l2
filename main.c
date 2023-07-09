@@ -152,19 +152,20 @@ int main(int argc, char *argv[]) {
         nvfbc_data.display_id = selected_screen.id;
     }
 
-    NvFBC_SessionData nvfbc_session = create_session(nvfbc_data, capture_settings, frame_ptr);
+    NvFBC_SessionData nvfbc_session = create_session(nvfbc_data, capture_settings, frame_ptr, pixel_fmt);
     printf("Opening the V4L2 loopback device.\n");
 
     int32_t v4l2_device = open_device(output_device);
-    set_device_format(v4l2_device, nvfbc_data.width, nvfbc_data.height);
+    set_device_format(v4l2_device, nvfbc_data.width, nvfbc_data.height, pixel_fmt);
 
     printf("Starting capture. Press CTRL+C to exit. \n");
     uint32_t buffer_size = get_pixel_buffer_size(nvfbc_data.width, nvfbc_data.height, pixel_fmt);
 
+    NvFBC_SessionData* session_pointer = &nvfbc_session;
     signal(SIGINT, interrupt_signal);
     for (;;) {
         if (quit_program == true) break;
-        capture_frame(&nvfbc_session);
+        capture_frame(session_pointer);
         write_frame(v4l2_device, frame_ptr, buffer_size);
     }
 

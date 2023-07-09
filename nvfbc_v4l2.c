@@ -44,7 +44,8 @@ NvFBC_InitData load_libraries() {
     return result;
 }
 
-NvFBC_SessionData create_session(NvFBC_InitData init_data, Capture_Settings capture_settings, void **frame_ptr) {
+NvFBC_SessionData create_session(NvFBC_InitData init_data, Capture_Settings capture_settings, void **frame_ptr,
+                                 enum Pixel_Format pixel_fmt) {
     NVFBCSTATUS nvfbc_status;
 
     NVFBC_SESSION_HANDLE fbc_handle;
@@ -116,7 +117,7 @@ NvFBC_SessionData create_session(NvFBC_InitData init_data, Capture_Settings capt
     memset(&setup_params, 0, sizeof(setup_params));
 
     setup_params.dwVersion = NVFBC_TOSYS_SETUP_PARAMS_VER;
-    setup_params.eBufferFormat = NVFBC_BUFFER_FORMAT_BGRA;
+    setup_params.eBufferFormat = get_nvfbc_pixel_format(pixel_fmt);
     setup_params.ppBuffer = frame_ptr;
     setup_params.bWithDiffMap = NVFBC_FALSE;
 
