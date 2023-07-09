@@ -9,8 +9,6 @@ and passes the captured frames to a [v4l2loopback](https://github.com/umlaeute/v
 
 _**Because why not? It's better than nothing!**_
 
-----
-
 ## Requirements:
 
 * **An Nvidia GPU that supports NvFBC.** _(if it wasn't obvious)_
@@ -22,7 +20,6 @@ _**Because why not? It's better than nothing!**_
 
 ## Installation
 
-----
 
 In short: CMake
 
@@ -41,7 +38,6 @@ $ make -j${nproc}
 
 ## Running
 
-----
 
 **If you have worked with v4l2loopback before:** 
 
