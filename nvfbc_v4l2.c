@@ -44,7 +44,7 @@ NvFBC_InitData load_libraries() {
     return result;
 }
 
-NvFBC_SessionData create_session(NvFBC_InitData init_data, CaptureSettings capture_settings, void **frame_ptr) {
+NvFBC_SessionData create_session(NvFBC_InitData init_data, Capture_Settings capture_settings, void **frame_ptr) {
     NVFBCSTATUS nvfbc_status;
 
     NVFBC_SESSION_HANDLE fbc_handle;

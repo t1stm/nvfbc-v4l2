@@ -15,30 +15,40 @@ void interrupt_signal() {
     quit_program = true;
 }
 
+enum Pixel_Format string_to_pixel_fmt(char* string) {
+    return
+    strcmp(string, "rgb") == 0 ? RGB_24 :
+    strcmp(string, "yuv420") == 0 ? YUV_420 :
+    strcmp(string, "rgba") == 0 ? RGBA_444 : Pixel_Fmt_None;
+}
+
 int main(int argc, char *argv[]) {
     bool list = false;
     int32_t opt;
     int32_t output_device = -1;
-    CaptureSettings capture_settings = {
+    Capture_Settings capture_settings = {
             .push_model = true,
             .direct_capture = false,
             .show_cursor = true,
             .fps = 60
     };
 
+    enum Pixel_Format pixel_fmt = RGB_24;
+
     struct option long_options[] = {
             {"output-device",  required_argument, NULL, 'o'},
             {"screen",         required_argument, NULL, 's'},
+            {"pixel_format",   required_argument, NULL, 'p'},
             {"fps",            required_argument, NULL, 'f'},
-            {"no-push-model",  no_argument,       NULL, 'p'},
+            {"no-push-model",  no_argument,       NULL, 'n'},
             {"direct-capture", no_argument,       NULL, 'd'},
             {"no-cursor",      no_argument,       NULL, 'c'},
             {"list-screens",   no_argument,       NULL, 'l'},
             {"help",           no_argument,       NULL, 'h'},
-            {NULL, 0,                             NULL, 0}
+            {NULL,             0,                 NULL, 0}
     };
 
-    while ((opt = getopt_long(argc, argv, "o:s:f:pdc:l:h", long_options, NULL)) != -1) {
+    while ((opt = getopt_long(argc, argv, "o:s:f:ndclhp:", long_options, NULL)) != -1) {
         int32_t temporary;
         switch (opt) {
             case 0:
@@ -53,8 +63,14 @@ int main(int argc, char *argv[]) {
             case 'f':
                 capture_settings.fps = atoi(optarg);
                 break;
-
             case 'p':
+                pixel_fmt = string_to_pixel_fmt(optarg);
+                if (pixel_fmt != Pixel_Fmt_None) break;
+
+                fprintf(stderr, "Invalid pixel format specified: --pixel_format = %s\n", optarg);
+                exit(EXIT_FAILURE);
+
+            case 'n':
                 capture_settings.push_model = false;
                 break;
             case 'd':
@@ -144,8 +160,9 @@ void show_help() {
     printf("Options:\n");
     printf("  -o, --output-device <device>  REQUIRED: Sets the V4L2 output device number.\n");
     printf("  -s, --screen <screen>         Sets the requested X screen.\n");
+    printf("  -p, --pixel_format <pixel_fmt>         Sets the wanted pixel format.\n");
     printf("  -f, --fps <fps>               Sets the frames per second.\n");
-    printf("  -p, --no-push-model           Disables push model.\n");
+    printf("  -n, --no-push-model           Disables push model.\n");
     printf("  -d, --direct-capture          Enables direct capture (warning: causes cursor issues when a screen is selected)\n");
     printf("  -c, --no-cursor               Hides the cursor.\n");
     printf("  -l, --list-screens            Lists available screens.\n");
