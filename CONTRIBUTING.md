@@ -1,6 +1,6 @@
 # Contributing Guidelines
 
-Thank you for considering contributing to our project! 
+Thank you for considering contributing to this project!
 
 The main goal you must follow is **to write clean code!**
 

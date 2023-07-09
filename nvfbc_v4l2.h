@@ -31,8 +31,7 @@ typedef struct {
 } CaptureSettings;
 
 typedef struct {
-    PNVFBCCREATEINSTANCE NvFBCCreateInstance_ptr;
-    Display* X_display;
+    Display *X_display;
 
     uint32_t fr_width;
     uint32_t fr_height;
@@ -46,19 +45,22 @@ typedef struct {
 } NvFBC_InitData;
 
 typedef struct {
-    NVFBC_SESSION_HANDLE fbcHandle;
-    NVFBC_CREATE_HANDLE_PARAMS createHandleParams;
-    NVFBC_GET_STATUS_PARAMS statusParams;
-    NVFBC_CREATE_CAPTURE_SESSION_PARAMS createCaptureParams;
+    NVFBC_SESSION_HANDLE fbc_handle;
+    NVFBC_CREATE_HANDLE_PARAMS create_handle_params;
+    NVFBC_GET_STATUS_PARAMS status_params;
+    NVFBC_CREATE_CAPTURE_SESSION_PARAMS create_capture_params;
 } NvFBC_SessionData;
 
 static void *nvfbc_lib = NULL;
 static PNVFBCCREATEINSTANCE NvFBCCreateInstance_ptr = NULL;
 static NVFBC_API_FUNCTION_LIST function_list;
 
-NvFBC_InitData load_library();
+NvFBC_InitData load_libraries();
+
 NvFBC_SessionData create_session(NvFBC_InitData init_data, CaptureSettings capture_settings, void **frame_ptr);
+
 void capture_frame(NvFBC_SessionData *session_data);
+
 void destroy_session(NvFBC_SessionData session_data);
 
 #endif

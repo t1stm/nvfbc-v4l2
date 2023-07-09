@@ -15,7 +15,7 @@ void interrupt_signal() {
     quit_program = true;
 }
 
-int main(int argc, char* argv[]) {
+int main(int argc, char *argv[]) {
     bool list = false;
     int32_t opt;
     int32_t output_device = -1;
@@ -27,15 +27,15 @@ int main(int argc, char* argv[]) {
     };
 
     struct option long_options[] = {
-            {"output-device", required_argument, NULL, 'o'},
-            {"screen", required_argument, NULL, 's'},
-            {"fps", required_argument, NULL, 'f'},
-            {"no-push-model", no_argument, NULL, 'p'},
-            {"direct-capture", no_argument, NULL, 'd'},
-            {"no-cursor", no_argument, NULL, 'c'},
-            {"list-screens", no_argument, NULL, 'l'},
-            {"help", no_argument, NULL, 'h'},
-            {NULL, 0, NULL, 0}
+            {"output-device",  required_argument, NULL, 'o'},
+            {"screen",         required_argument, NULL, 's'},
+            {"fps",            required_argument, NULL, 'f'},
+            {"no-push-model",  no_argument,       NULL, 'p'},
+            {"direct-capture", no_argument,       NULL, 'd'},
+            {"no-cursor",      no_argument,       NULL, 'c'},
+            {"list-screens",   no_argument,       NULL, 'l'},
+            {"help",           no_argument,       NULL, 'h'},
+            {NULL, 0,                             NULL, 0}
     };
 
     while ((opt = getopt_long(argc, argv, "o:s:f:pdc:l:h", long_options, NULL)) != -1) {
@@ -89,10 +89,10 @@ int main(int argc, char* argv[]) {
 
     printf("Loading the NvFBC library.\n");
 
-    byte* frame;
-    void** frame_ptr = (void**) &frame;
+    byte *frame;
+    void **frame_ptr = (void **) &frame;
 
-    NvFBC_InitData nvfbc_data = load_library();
+    NvFBC_InitData nvfbc_data = load_libraries();
     X_Data x_data = get_screens(nvfbc_data.X_display);
 
     if (list == true) {

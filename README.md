@@ -2,8 +2,8 @@
 
 ### Miss [obs-nvfbc](https://gitlab.com/fzwoch/obs-nvfbc)? Need a replacement? This project is for you!
 
-This project is a tool (hack) for **Linux** that uses the [Nvidia NvFBC API](https://developer.nvidia.com/capture-sdk) 
-and passes the captured frames to a [v4l2loopback](https://github.com/umlaeute/v4l2loopback) device. 
+This project is a tool (hack) for **Linux** that uses the [Nvidia NvFBC API](https://developer.nvidia.com/capture-sdk)
+and passes the captured frames to a [v4l2loopback](https://github.com/umlaeute/v4l2loopback) device.
 
 _**Because why not? It's better than nothing!**_
 
@@ -18,12 +18,12 @@ _**Because why not? It's better than nothing!**_
 
 ## Installation:
 
-
 In short: CMake
 
 **_But how?_**
 
 Like this:
+
 ```shell
 $ git clone https://github.com/t1stm/nvfbc-v4l2.git
 $ cd nvfbc-v4l2
@@ -36,8 +36,7 @@ $ make -j${nproc}
 
 ## Running:
 
-
-**If you have worked with v4l2loopback before:** 
+**If you have worked with v4l2loopback before:**
 
 ```shell
 $ ./nvfbc-v4l2 -h
@@ -56,6 +55,7 @@ $ sudo modprobe v4l2loopback devices=1 video_nr=x card_label="NvFBC Capture" exc
 ...or if you want to use the OBS Virtual Camera:
 
 _If you don't have any other capture devices **set x to 0, and if you do, set it to the highest device number + 1**_
+
 ```shell
 $ sudo modprobe v4l2loopback devices=2 video_nr=x,y card_label="OBS Virtual Camera, NvFBC Capture" exclusive_caps=1,1
 ```
@@ -67,6 +67,7 @@ $ ./nvfbc-v4l2 -l
 ```
 
 3. **Use the virtual v4l2loopback device and optionally the selected screen.**
+
 ```shell
 $ ./nvfbc-v4l2 -o [v4l2-nr] -s [screen]
 ```

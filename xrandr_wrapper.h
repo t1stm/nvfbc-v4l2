@@ -22,12 +22,12 @@ typedef struct {
 } X_Screen;
 
 typedef struct {
-    X_Screen* screens;
+    X_Screen *screens;
     size_t count;
 } X_Data;
 
-X_Data get_screens(Display* x_display) {
-    XRRScreenResources* screen_resources;
+X_Data get_screens(Display *x_display) {
+    XRRScreenResources *screen_resources;
     int event_base, error_base;
 
     if (!XRRQueryExtension(x_display, &event_base, &error_base)) {
@@ -47,7 +47,7 @@ X_Data get_screens(Display* x_display) {
 
     // Pass to check valid displays.
     for (int i = 0; i < num_monitors; i++) {
-        XRRCrtcInfo* crtc_info = XRRGetCrtcInfo(x_display, screen_resources, screen_resources->crtcs[i]);
+        XRRCrtcInfo *crtc_info = XRRGetCrtcInfo(x_display, screen_resources, screen_resources->crtcs[i]);
         if (!crtc_info || crtc_info->width == 0 && crtc_info->height == 0) {
             continue;
         }
@@ -56,12 +56,12 @@ X_Data get_screens(Display* x_display) {
         ++valid_monitors;
     }
 
-    X_Screen* screens = malloc(sizeof(Screen) * valid_monitors);
+    X_Screen *screens = malloc(sizeof(Screen) * valid_monitors);
     uint32_t current_monitor = 0;
 
     // Pass to add displays.
     for (int i = 0; i < num_monitors; i++) {
-        XRRCrtcInfo* crtc_info = XRRGetCrtcInfo(x_display, screen_resources, screen_resources->crtcs[i]);
+        XRRCrtcInfo *crtc_info = XRRGetCrtcInfo(x_display, screen_resources, screen_resources->crtcs[i]);
         if (!crtc_info || crtc_info->width == 0 && crtc_info->height == 0) {
             continue;
         }

@@ -32,7 +32,7 @@ void set_device_format(int32_t file_descriptor, uint32_t width, uint32_t height)
     memset(&format, 0, sizeof(format));
     format.type = V4L2_BUF_TYPE_VIDEO_OUTPUT;
 
-    if(ioctl(file_descriptor, VIDIOC_G_FMT, &format) < 0) {
+    if (ioctl(file_descriptor, VIDIOC_G_FMT, &format) < 0) {
         // I have no idea what this does. help...
         fprintf(stderr, "Failed to get the format of the v4l2loopback device.\n");
         exit(EXIT_FAILURE);
@@ -51,7 +51,7 @@ void set_device_format(int32_t file_descriptor, uint32_t width, uint32_t height)
     close(file_descriptor);
 }
 
-void write_frame(int32_t file_descriptor, void** frame, uint32_t size) {
+void write_frame(int32_t file_descriptor, void **frame, uint32_t size) {
     write(file_descriptor, *frame, size);
 }
 
