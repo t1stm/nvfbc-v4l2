@@ -57,7 +57,7 @@ $ sudo modprobe v4l2loopback devices=1 video_nr=x card_label="NvFBC Capture" exc
 
 ...or if you want to use the OBS Virtual Camera:
 
-_If you don't have any other capture devices **set x to 0**_
+_If you don't have any other capture devices **set x to 0, and if you do, set it to the highest device number + 1**_
 ```shell
 $ sudo modprobe v4l2loopback devices=2 video_nr=x,y card_label="OBS Virtual Camera, NvFBC Capture" exclusive_caps=1,1
 ```
