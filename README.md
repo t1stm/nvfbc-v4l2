@@ -79,3 +79,9 @@ $ ./nvfbc-v4l2 -o [v4l2-nr] -s [screen]
 If the capture appears corrupted, try removing the v4l2loopback module and
 adding it again with the commands above. If that doesn't help, open up an issue,
 and I'll try my best to help. **Remember to close the program while doing this.**
+
+# Special Thanks To:
+
+* [umläute](https://github.com/umlaeute) (umlaeute) - Developer of the v4l2loopback Linux module. | Without his work, this tool won't exist.
+* [Florian Zwoch](https://gitlab.com/fzwoch) (fzwoch) - Developer of the obs-nvfbc plugin. | I read his plugin's code to understand the NvFBC API.
+* The Nvidia Capture SDK devs | For making the API easy to use.
