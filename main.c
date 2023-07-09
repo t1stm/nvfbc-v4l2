@@ -22,6 +22,23 @@ enum Pixel_Format string_to_pixel_fmt(char* string) {
     strcmp(string, "rgba") == 0 ? RGBA_444 : Pixel_Fmt_None;
 }
 
+uint32_t get_pixel_buffer_size(uint32_t width, uint32_t height, enum Pixel_Format pixel_fmt) {
+    assert(pixel_fmt != Pixel_Fmt_None);
+
+    switch (pixel_fmt) {
+        case YUV_420:
+            return lround((width + height) * 1.5);
+        case RGB_24:
+            return (width + height) * 3;
+        case RGBA_444:
+            return (width + height) * 4;
+
+        default:
+            fprintf(stderr, "Invalid pixel format in buffer size calculator.\n");
+            exit(EXIT_FAILURE);
+    }
+}
+
 int main(int argc, char *argv[]) {
     bool list = false;
     int32_t opt;
@@ -142,7 +159,7 @@ int main(int argc, char *argv[]) {
     set_device_format(v4l2_device, nvfbc_data.width, nvfbc_data.height);
 
     printf("Starting capture. Press CTRL+C to exit. \n");
-    uint32_t buffer_size = (nvfbc_data.width * nvfbc_data.height) * 4 /* Bytes per pixel */;
+    uint32_t buffer_size = get_pixel_buffer_size(nvfbc_data.width, nvfbc_data.height, pixel_fmt);
 
     signal(SIGINT, interrupt_signal);
     for (;;) {
