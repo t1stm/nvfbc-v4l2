@@ -29,7 +29,7 @@ $ git clone https://github.com/t1stm/nvfbc-v4l2.git
 $ cd nvfbc-v4l2
 $ mkdir build && cd build
 $ cmake ..
-$ make -j${nproc}
+$ make -j$(nproc)
 ```
 
 ----
