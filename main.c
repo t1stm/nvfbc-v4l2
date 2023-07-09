@@ -27,11 +27,11 @@ uint32_t get_pixel_buffer_size(uint32_t width, uint32_t height, enum Pixel_Forma
 
     switch (pixel_fmt) {
         case YUV_420:
-            return lround((width + height) * 1.5);
+            return lround((width * height) * 1.5);
         case RGB_24:
-            return (width + height) * 3;
+            return (width * height) * 3;
         case RGBA_444:
-            return (width + height) * 4;
+            return (width * height) * 4;
 
         default:
             fprintf(stderr, "Invalid pixel format in buffer size calculator.\n");
