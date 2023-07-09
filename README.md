@@ -16,7 +16,7 @@ _**Because why not? It's better than nothing!**_
 
 ----
 
-## Installation
+## Installation:
 
 
 In short: CMake
@@ -34,7 +34,7 @@ $ make -j${nproc}
 
 ----
 
-## Running
+## Running:
 
 
 **If you have worked with v4l2loopback before:** 
