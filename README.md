@@ -85,3 +85,6 @@ and I'll try my best to help. **Remember to close the program while doing this.*
 * [umläute](https://github.com/umlaeute) (umlaeute) - Developer of the v4l2loopback Linux module. | Without his work, this tool won't exist.
 * [Florian Zwoch](https://gitlab.com/fzwoch) (fzwoch) - Developer of the obs-nvfbc plugin. | I read his plugin's code to understand the NvFBC API.
 * The Nvidia Capture SDK devs | For making the API easy to use.
+
+# Known Issues:
+* V4L2 device doesn't show in Chromium-based applications, due to the BGRA444 color space being used.
