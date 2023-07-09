@@ -1,7 +1,5 @@
 # nvfbc-v4l2
 
-----
-
 ### Miss [obs-nvfbc](https://gitlab.com/fzwoch/obs-nvfbc)? Need a replacement? This project is for you!
 
 This project is a tool (hack) for **Linux** that uses the [Nvidia NvFBC API](https://developer.nvidia.com/capture-sdk) 
