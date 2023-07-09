@@ -87,4 +87,4 @@ and I'll try my best to help. **Remember to close the program while doing this.*
 * The Nvidia Capture SDK devs | For making the API easy to use.
 
 # Known Issues:
-* V4L2 device doesn't show in Chromium-based applications, due to the BGRA444 color space being used.
+~~* V4L2 device doesn't show in Chromium-based applications, due to the BGRA444 color space being used.~~
