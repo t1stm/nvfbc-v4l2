@@ -5,6 +5,7 @@
 #include "v4l2_wrapper.h"
 #include "nvfbc_v4l2.h"
 #include "xrandr_wrapper.h"
+#include "pixel_fmt_tools.h"
 
 static bool quit_program = false;
 
@@ -163,13 +164,27 @@ int main(int argc, char *argv[]) {
 
     NvFBC_SessionData* session_pointer = &nvfbc_session;
     signal(SIGINT, interrupt_signal);
+
+    YUV_420_Data* yuv_data = NULL;
     for (;;) {
         if (quit_program == true) break;
         capture_frame(session_pointer);
+        if (pixel_fmt == YUV_420) {
+            if (yuv_data == NULL) {
+                yuv_data = (YUV_420_Data*) malloc(sizeof(YUV_420_Data));
+                memset(yuv_data, 0, sizeof(YUV_420_Data));
+            }
+            inplace_nv12_to_yuv420p(*frame_ptr, nvfbc_data.width, nvfbc_data.height, yuv_data);
+        }
         write_frame(v4l2_device, frame_ptr, buffer_size);
     }
 
     destroy_session(nvfbc_session);
+    if (yuv_data != NULL) {
+        free(yuv_data->u_plane);
+        free(yuv_data->y_plane);
+        free(yuv_data);
+    }
     return EXIT_SUCCESS;
 }
 
