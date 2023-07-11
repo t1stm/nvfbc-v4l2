@@ -9,7 +9,7 @@ _**Because why not? It's better than nothing!**_
 
 ## Requirements:
 
-* **An Nvidia GPU that supports NvFBC.** _(if it wasn't obvious)_
+* **A Nvidia GPU that supports NvFBC.** _(if it wasn't obvious)_
 * **A Linux Desktop with CMake and GCC installed.**
 * **Proprietary Nvidia Drivers.** _(maybe. I haven't tested it with the open-source drivers yet)_
 * **X.org as a display server.**
