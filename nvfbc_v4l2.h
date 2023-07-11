@@ -57,6 +57,7 @@ static NVFBC_API_FUNCTION_LIST function_list;
 
 static enum _NVFBC_BUFFER_FORMAT get_nvfbc_pixel_format(enum Pixel_Format pixel_fmt) {
     switch (pixel_fmt) {
+        case NV_12:
         case YUV_420:
             return NVFBC_BUFFER_FORMAT_NV12;
         case RGB_24:

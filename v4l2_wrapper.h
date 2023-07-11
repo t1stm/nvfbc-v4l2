@@ -29,6 +29,8 @@ int32_t open_device(int32_t output_device) {
 
 static uint32_t get_v4l2_pixel_fmt(enum Pixel_Format pixel_fmt) {
     switch (pixel_fmt) {
+        case NV_12:
+            return V4L2_PIX_FMT_NV12;
         case YUV_420:
             return V4L2_PIX_FMT_YUV420;
         case RGB_24:

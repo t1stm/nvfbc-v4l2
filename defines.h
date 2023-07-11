@@ -20,6 +20,7 @@ enum Pixel_Format {
     YUV_420,
     RGB_24,
     RGBA_444,
+    NV_12,
     Pixel_Fmt_None
 };
 

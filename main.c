@@ -20,13 +20,15 @@ enum Pixel_Format string_to_pixel_fmt(char* string) {
     return
     strcmp(string, "rgb") == 0 ? RGB_24 :
     strcmp(string, "yuv420") == 0 ? YUV_420 :
-    strcmp(string, "rgba") == 0 ? RGBA_444 : Pixel_Fmt_None;
+    strcmp(string, "rgba") == 0 ? RGBA_444 :
+    strcmp(string, "nv12") == 0 ? NV_12 : Pixel_Fmt_None;
 }
 
 uint32_t get_pixel_buffer_size(uint32_t width, uint32_t height, enum Pixel_Format pixel_fmt) {
     assert(pixel_fmt != Pixel_Fmt_None);
 
     switch (pixel_fmt) {
+        case NV_12:
         case YUV_420:
             return lround((width * height) * 1.5);
         case RGB_24:
