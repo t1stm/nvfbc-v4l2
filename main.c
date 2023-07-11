@@ -195,7 +195,7 @@ void show_help() {
     printf("Options:\n");
     printf("  -o, --output-device <device>  REQUIRED: Sets the V4L2 output device number.\n");
     printf("  -s, --screen <screen>         Sets the requested X screen.\n");
-    printf("  -p, --pixel_format <pix_fmt>  Sets the wanted pixel format. Allowed values: 'rgb' (Default), 'yuv420', 'rgba'\n");
+    printf("  -p, --pixel_format <pix_fmt>  Sets the wanted pixel format. Allowed values: 'rgb' (Default), 'yuv420', 'rgba', 'nv12'\n");
     printf("  -f, --fps <fps>               Sets the frames per second.\n");
     printf("  -n, --no-push-model           Disables push model.\n");
     printf("  -d, --direct-capture          Enables direct capture. (warning: causes cursor issues when a screen is selected)\n");
