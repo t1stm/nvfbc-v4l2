@@ -159,7 +159,7 @@ int main(int argc, char *argv[]) {
     printf("Opening the V4L2 loopback device.\n");
 
     int32_t v4l2_device = open_device(output_device);
-    set_device_format(v4l2_device, nvfbc_data.width, nvfbc_data.height, pixel_fmt);
+    set_device_format(v4l2_device, nvfbc_data.width, nvfbc_data.height, pixel_fmt, capture_settings.fps);
 
     printf("Starting capture. Press CTRL+C to exit. \n");
     uint32_t buffer_size = get_pixel_buffer_size(nvfbc_data.width, nvfbc_data.height, pixel_fmt);

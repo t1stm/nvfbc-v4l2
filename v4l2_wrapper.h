@@ -44,7 +44,7 @@ static uint32_t get_v4l2_pixel_fmt(enum Pixel_Format pixel_fmt) {
     }
 }
 
-void set_device_format(int32_t file_descriptor, uint32_t width, uint32_t height, enum Pixel_Format pixel_fmt) {
+void set_device_format(int32_t file_descriptor, uint32_t width, uint32_t height, enum Pixel_Format pixel_fmt, uint32_t framerate) {
     assert(file_descriptor >= 0);
 
     struct v4l2_capability capability;
@@ -68,7 +68,7 @@ void set_device_format(int32_t file_descriptor, uint32_t width, uint32_t height,
     parm.type = V4L2_BUF_TYPE_VIDEO_OUTPUT;
     parm.parm.output.capability = V4L2_CAP_TIMEPERFRAME;
     parm.parm.output.timeperframe.numerator = 1;
-    parm.parm.output.timeperframe.denominator = 60;
+    parm.parm.output.timeperframe.denominator = framerate;
 
     if (ioctl(file_descriptor, VIDIOC_S_PARM, &parm) < 0) {
         fprintf(stderr, "Failed to set the framerate of the v4l2loopback device.\n");
