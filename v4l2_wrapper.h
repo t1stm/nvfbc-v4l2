@@ -11,6 +11,7 @@
 #include <linux/videodev2.h>
 #include <linux/v4l2-common.h>
 #include <linux/v4l2-controls.h>
+#include <assert.h>
 
 #include "defines.h"
 
@@ -43,28 +44,58 @@ static uint32_t get_v4l2_pixel_fmt(enum Pixel_Format pixel_fmt) {
     }
 }
 
-void set_device_format(int32_t file_descriptor, uint32_t width, uint32_t height, enum Pixel_Format pixel_fmt) {
+void set_device_format(int32_t file_descriptor, uint32_t width, uint32_t height, enum Pixel_Format pixel_fmt, uint32_t framerate) {
+    assert(file_descriptor >= 0);
+
+    struct v4l2_capability capability;
     struct v4l2_format format;
-    memset(&format, 0, sizeof(format));
+    struct v4l2_streamparm parm;
+
+    if (ioctl(file_descriptor, VIDIOC_QUERYCAP, &capability) < 0) {
+        fprintf(stderr, "Failed to query the v4l2loopback device.\n");
+        goto fail_and_log;
+    }
+
     format.type = V4L2_BUF_TYPE_VIDEO_OUTPUT;
 
     if (ioctl(file_descriptor, VIDIOC_G_FMT, &format) < 0) {
         // I have no idea what this does. help...
         fprintf(stderr, "Failed to get the format of the v4l2loopback device.\n");
-        exit(EXIT_FAILURE);
+        goto fail_and_log;
+    }
+
+    memset(&parm, 0, sizeof(parm));
+    parm.type = V4L2_BUF_TYPE_VIDEO_OUTPUT;
+    parm.parm.output.capability = V4L2_CAP_TIMEPERFRAME;
+    parm.parm.output.timeperframe.numerator = 1;
+    parm.parm.output.timeperframe.denominator = framerate;
+
+    if (ioctl(file_descriptor, VIDIOC_S_PARM, &parm) < 0) {
+        fprintf(stderr, "Failed to set the framerate of the v4l2loopback device.\n");
+        goto fail_and_log;
     }
 
     format.fmt.pix.width = width;
     format.fmt.pix.height = height;
     format.fmt.pix.pixelformat = get_v4l2_pixel_fmt(pixel_fmt);
-    format.fmt.pix.field = V4L2_FIELD_NONE;
 
-    if (ioctl(file_descriptor, VIDIOC_S_FMT, &format) >= 0) return;
+    if (ioctl(file_descriptor, VIDIOC_S_FMT, &format) < 0) {
+        fprintf(stderr, "Failed to set the format of the v4l2loopback device.\n");
+        goto fail_and_log;
+    }
 
-    fprintf(stderr, "Failed to set the format of the v4l2loopback device.\n");
+    if (ioctl(file_descriptor, VIDIOC_STREAMON, &parm) < 0) {
+        fprintf(stderr, "Failed to start streaming.\n");
+        goto fail_and_log;
+    }
+
+    return;
+
+    fail_and_log:
+
     perror("Error");
-    fprintf(stderr, "Width: %u, Height: %u\n", width, height);
     close(file_descriptor);
+    exit(EXIT_FAILURE);
 }
 
 void write_frame(int32_t file_descriptor, void **frame, uint32_t size) {
