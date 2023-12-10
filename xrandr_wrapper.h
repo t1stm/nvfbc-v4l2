@@ -6,7 +6,6 @@
 #include <stdio.h>
 
 #include <X11/Xlib.h>
-#include <X11/Xatom.h>
 #include <X11/extensions/Xrandr.h>
 
 typedef struct {
@@ -26,8 +25,7 @@ typedef struct {
     size_t count;
 } X_Data;
 
-X_Data get_screens(Display *x_display) {
-    XRRScreenResources *screen_resources;
+inline X_Data get_screens(Display *x_display) {
     int event_base, error_base;
 
     if (!XRRQueryExtension(x_display, &event_base, &error_base)) {
@@ -35,13 +33,13 @@ X_Data get_screens(Display *x_display) {
         exit(EXIT_FAILURE);
     }
 
-    screen_resources = XRRGetScreenResources(x_display, DefaultRootWindow(x_display));
+    XRRScreenResources* screen_resources = XRRGetScreenResources(x_display, DefaultRootWindow(x_display));
     if (!screen_resources) {
         fprintf(stderr, "Unable to get Xrandr screen resources.\n");
         exit(EXIT_FAILURE);
     }
 
-    int32_t num_monitors = screen_resources->ncrtc;
+    const int32_t num_monitors = screen_resources->ncrtc;
 
     uint32_t valid_monitors = 0;
 
@@ -81,7 +79,7 @@ X_Data get_screens(Display *x_display) {
 
     XRRFreeScreenResources(screen_resources);
 
-    X_Data data = {
+    const X_Data data = {
             .screens = screens,
             .count = valid_monitors
     };
@@ -89,9 +87,9 @@ X_Data get_screens(Display *x_display) {
     return data;
 }
 
-void list_screens(X_Data x_data) {
+inline void list_screens(const X_Data x_data) {
     for (int i = 0; i < x_data.count; ++i) {
-        X_Screen screen = x_data.screens[i];
+        const X_Screen screen = x_data.screens[i];
 
         printf("Monitor %u:\n", i);
         printf("  Offset X: %u\n", screen.offset_x);

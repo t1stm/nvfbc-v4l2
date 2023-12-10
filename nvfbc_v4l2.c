@@ -18,7 +18,7 @@ NvFBC_InitData load_libraries() {
     memset(&function_list, 0, sizeof(function_list));
     function_list.dwVersion = NVFBC_VERSION;
 
-    NVFBCSTATUS nvfbc_status = NvFBCCreateInstance_ptr(&function_list);
+    const NVFBCSTATUS nvfbc_status = NvFBCCreateInstance_ptr(&function_list);
     if (nvfbc_status != NVFBC_SUCCESS) {
         fprintf(stderr, "Unable to create NvFBC instance (status: %d)\n",
                 nvfbc_status);
@@ -31,10 +31,10 @@ NvFBC_InitData load_libraries() {
         exit(EXIT_FAILURE);
     }
 
-    uint32_t framebuffer_width = DisplayWidth(dpy, XDefaultScreen(dpy));
-    uint32_t framebuffer_height = DisplayHeight(dpy, XDefaultScreen(dpy));
+    const uint32_t framebuffer_width = DisplayWidth(dpy, XDefaultScreen(dpy));
+    const uint32_t framebuffer_height = DisplayHeight(dpy, XDefaultScreen(dpy));
 
-    NvFBC_InitData result = {
+    const NvFBC_InitData result = {
             .X_display = dpy,
 
             // Replaced if screen is specified.
@@ -136,8 +136,7 @@ NvFBC_SessionData create_session(NvFBC_InitData init_data, Capture_Settings capt
     return result;
 }
 
-void destroy_session(NvFBC_SessionData session_data) {
-    NVFBCSTATUS nvfbc_status;
+void destroy_session(const NvFBC_SessionData session_data) {
     NVFBC_DESTROY_CAPTURE_SESSION_PARAMS destroy_capture_params;
     NVFBC_DESTROY_HANDLE_PARAMS destroy_handle_params;
 
@@ -145,7 +144,8 @@ void destroy_session(NvFBC_SessionData session_data) {
     memset(&destroy_capture_params, 0, sizeof(destroy_capture_params));
     destroy_capture_params.dwVersion = NVFBC_DESTROY_CAPTURE_SESSION_PARAMS_VER;
 
-    nvfbc_status = function_list.nvFBCDestroyCaptureSession(session_data.fbc_handle, &destroy_capture_params);
+    NVFBCSTATUS nvfbc_status = function_list.nvFBCDestroyCaptureSession(
+        session_data.fbc_handle, &destroy_capture_params);
     if (nvfbc_status != NVFBC_SUCCESS) {
         fprintf(stderr, "%s\n", function_list.nvFBCGetLastErrorStr(session_data.fbc_handle));
         exit(EXIT_FAILURE);
@@ -162,8 +162,7 @@ void destroy_session(NvFBC_SessionData session_data) {
     }
 }
 
-void capture_frame(NvFBC_SessionData *session_data) {
-    NVFBCSTATUS nvfbc_status;
+void capture_frame(const NvFBC_SessionData *session_data) {
     NVFBC_TOSYS_GRAB_FRAME_PARAMS grab_params;
     NVFBC_FRAME_GRAB_INFO frame_info;
 
@@ -179,7 +178,7 @@ void capture_frame(NvFBC_SessionData *session_data) {
     grab_params.pFrameGrabInfo = &frame_info;
 
     // Captures a frame.
-    nvfbc_status = function_list.nvFBCToSysGrabFrame(session_data->fbc_handle, &grab_params);
+    const NVFBCSTATUS nvfbc_status = function_list.nvFBCToSysGrabFrame(session_data->fbc_handle, &grab_params);
     if (nvfbc_status != NVFBC_SUCCESS) {
         fprintf(stderr, "Capturing frame failed: '%s'\n", function_list.nvFBCGetLastErrorStr(session_data->fbc_handle));
         exit(EXIT_FAILURE);
