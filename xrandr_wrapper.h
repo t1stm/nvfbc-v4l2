@@ -25,7 +25,7 @@ typedef struct {
     size_t count;
 } X_Data;
 
-inline X_Data get_screens(Display *x_display) {
+X_Data get_screens(Display *x_display) {
     int event_base, error_base;
 
     if (!XRRQueryExtension(x_display, &event_base, &error_base)) {
@@ -87,7 +87,7 @@ inline X_Data get_screens(Display *x_display) {
     return data;
 }
 
-inline void list_screens(const X_Data x_data) {
+void list_screens(const X_Data x_data) {
     for (int i = 0; i < x_data.count; ++i) {
         const X_Screen screen = x_data.screens[i];
 

@@ -1,4 +1,5 @@
 #include "nvfbc_v4l2.h"
+#include <string.h>
 
 NvFBC_InitData load_libraries() {
     Display *dpy = NULL;

@@ -14,7 +14,7 @@
 
 #include "defines.h"
 
-inline int32_t open_device(const int32_t output_device) {
+int32_t open_device(const int32_t output_device) {
     // /dev/video###
     char device_location[13];
     sprintf(device_location, "/dev/video%u", output_device);
@@ -43,7 +43,7 @@ static uint32_t get_v4l2_pixel_fmt(const enum Pixel_Format pixel_fmt) {
     }
 }
 
-inline void set_device_format(int32_t file_descriptor, uint32_t width, uint32_t height, enum Pixel_Format pixel_fmt, uint32_t framerate) {
+void set_device_format(int32_t file_descriptor, uint32_t width, uint32_t height, enum Pixel_Format pixel_fmt, uint32_t framerate) {
     assert(file_descriptor >= 0);
 
     struct v4l2_capability capability;
@@ -97,8 +97,9 @@ inline void set_device_format(int32_t file_descriptor, uint32_t width, uint32_t 
     exit(EXIT_FAILURE);
 }
 
-inline void write_frame(const int32_t file_descriptor, void **frame, const uint32_t size) {
+void write_frame(const int32_t file_descriptor, void **frame, const uint32_t size) {
     write(file_descriptor, *frame, size);
+    fsync(file_descriptor);
 }
 
 #endif
