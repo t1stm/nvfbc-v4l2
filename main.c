@@ -12,7 +12,7 @@ static bool quit_program = false;
 void show_help();
 
 void interrupt_signal() {
-    printf("\nCtrl+C pressed. Exiting.\n");
+    fprintf(stderr,"\nCtrl+C pressed. Exiting.\n");
     quit_program = true;
 }
 
@@ -114,19 +114,19 @@ int main(const int argc, char *argv[]) {
                 exit(EXIT_SUCCESS);
 
             default:
-                printf("Invalid argument: -%c\n", optopt);
-                printf("To see all available arguments use the -h or --help arguments.\n");
+                fprintf(stderr,"Invalid argument: -%c\n", optopt);
+                fprintf(stderr,"To see all available arguments use the -h or --help arguments.\n");
                 exit(EXIT_FAILURE);
         }
     }
 
     if (output_device == -1) {
-        printf("Error: Required argument \'output-device\' not specified.\n");
-        printf("To see all available arguments use the -h or --help arguments.\n");
+        fprintf(stderr,"Error: Required argument \'output-device\' not specified.\n");
+        fprintf(stderr,"To see all available arguments use the -h or --help arguments.\n");
         exit(EXIT_FAILURE);
     }
 
-    printf("Loading the NvFBC library.\n");
+    fprintf(stderr,"Loading the NvFBC library.\n");
 
     byte *frame;
     void **frame_ptr = (void **) &frame;
@@ -139,8 +139,8 @@ int main(const int argc, char *argv[]) {
         exit(EXIT_SUCCESS);
     }
 
-    printf("Output device: /dev/video%u\n", output_device);
-    printf("Screen: %i\n", capture_settings.screen);
+    fprintf(stderr,"Output device: /dev/video%u\n", output_device);
+    fprintf(stderr,"Screen: %i\n", capture_settings.screen);
 
     if (capture_settings.screen != -1) {
         if (capture_settings.screen >= x_data.count) {
@@ -159,12 +159,12 @@ int main(const int argc, char *argv[]) {
     }
 
     const NvFBC_SessionData nvfbc_session = create_session(nvfbc_data, capture_settings, frame_ptr, pixel_fmt);
-    printf("Opening the V4L2 loopback device.\n");
+    fprintf(stderr,"Opening the V4L2 loopback device.\n");
 
     const int32_t v4l2_device = open_device(output_device);
     set_device_format(v4l2_device, nvfbc_data.width, nvfbc_data.height, pixel_fmt, capture_settings.fps);
 
-    printf("Starting capture. Press CTRL+C to exit. \n");
+    fprintf(stderr,"Starting capture. Press CTRL+C to exit. \n");
     const uint32_t buffer_size = get_pixel_buffer_size(nvfbc_data.width, nvfbc_data.height, pixel_fmt);
 
     const NvFBC_SessionData* session_pointer = &nvfbc_session;
@@ -205,15 +205,15 @@ inline void normal_loop(void** frame_ptr, const int32_t v4l2_device, const uint3
 }
 
 void show_help() {
-    printf("Usage: nvfbc-v4l2 [options]\n");
-    printf("Options:\n");
-    printf("  -o, --output-device <device>  REQUIRED: Sets the V4L2 output device number.\n");
-    printf("  -s, --screen <screen>         Sets the requested X screen.\n");
-    printf("  -p, --pixel_format <pix_fmt>  Sets the wanted pixel format. Allowed values: 'rgb' (Default), 'yuv420', 'rgba', 'nv12'\n");
-    printf("  -f, --fps <fps>               Sets the frames per second.\n");
-    printf("  -n, --no-push-model           Disables push model.\n");
-    printf("  -d, --direct-capture          Enables direct capture. (warning: causes cursor issues when a screen is selected)\n");
-    printf("  -c, --no-cursor               Hides the cursor.\n");
-    printf("  -l, --list-screens            Lists available screens.\n");
-    printf("  -h, --help                    Shows this help message.\n");
+    fprintf(stderr, "Usage: nvfbc-v4l2 [options]\n");
+    fprintf(stderr,"Options:\n");
+    fprintf(stderr,"  -o, --output-device <device>  REQUIRED: Sets the V4L2 output device number.\n");
+    fprintf(stderr,"  -s, --screen <screen>         Sets the requested X screen.\n");
+    fprintf(stderr,"  -p, --pixel_format <pix_fmt>  Sets the wanted pixel format. Allowed values: 'rgb' (Default), 'yuv420', 'rgba', 'nv12'\n");
+    fprintf(stderr,"  -f, --fps <fps>               Sets the frames per second.\n");
+    fprintf(stderr,"  -n, --no-push-model           Disables push model.\n");
+    fprintf(stderr,"  -d, --direct-capture          Enables direct capture. (warning: causes cursor issues when a screen is selected)\n");
+    fprintf(stderr,"  -c, --no-cursor               Hides the cursor.\n");
+    fprintf(stderr,"  -l, --list-screens            Lists available screens.\n");
+    fprintf(stderr,"  -h, --help                    Shows this help message.\n");
 }
