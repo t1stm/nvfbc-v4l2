@@ -12,7 +12,7 @@ static bool quit_program = false;
 void show_help();
 
 void interrupt_signal() {
-    printf("\nCtrl+C pressed. Exiting.\n");
+    fprintf(stderr,"\nCtrl+C pressed. Exiting.\n");
     quit_program = true;
 }
 
@@ -43,10 +43,11 @@ uint32_t get_pixel_buffer_size(const uint32_t width, const uint32_t height, cons
 }
 
 void yuv420_loop(void** frame_ptr, NvFBC_InitData nvfbc_data, int32_t v4l2_device, uint32_t buffer_size, const NvFBC_SessionData* session_pointer, YUV_420_Data** yuv_data);
-inline void normal_loop(void** frame_ptr, int32_t v4l2_device, uint32_t buffer_size, const NvFBC_SessionData* session_pointer);
+void normal_loop(void** frame_ptr, int32_t v4l2_device, uint32_t buffer_size, const NvFBC_SessionData* session_pointer);
 
 int main(const int argc, char *argv[]) {
     bool list = false;
+    bool stdout_output = false;
     int32_t opt;
     int32_t output_device = -1;
     Capture_Settings capture_settings = {
@@ -63,6 +64,7 @@ int main(const int argc, char *argv[]) {
             {"screen",         required_argument, NULL, 's'},
             {"pixel_format",   required_argument, NULL, 'p'},
             {"fps",            required_argument, NULL, 'f'},
+            {"stdout",         no_argument,       NULL, 'r'},
             {"no-push-model",  no_argument,       NULL, 'n'},
             {"direct-capture", no_argument,       NULL, 'd'},
             {"no-cursor",      no_argument,       NULL, 'c'},
@@ -71,7 +73,7 @@ int main(const int argc, char *argv[]) {
             {NULL,             0,                 NULL, 0}
     };
 
-    while ((opt = getopt_long(argc, argv, "o:s:f:ndclhp:", long_options, NULL)) != -1) {
+    while ((opt = getopt_long(argc, argv, "os:f:ndclhrp:", long_options, NULL)) != -1) {
         int32_t temporary;
         switch (opt) {
             case 0:
@@ -109,24 +111,28 @@ int main(const int argc, char *argv[]) {
                 list = true;
                 break;
 
+            case 'r':
+                stdout_output = true;
+                break;
+
             case 'h':
                 show_help();
                 exit(EXIT_SUCCESS);
 
             default:
-                printf("Invalid argument: -%c\n", optopt);
-                printf("To see all available arguments use the -h or --help arguments.\n");
+                fprintf(stderr,"Invalid argument: -%c\n", optopt);
+                fprintf(stderr,"To see all available arguments use the -h or --help arguments.\n");
                 exit(EXIT_FAILURE);
         }
     }
 
     if (output_device == -1) {
-        printf("Error: Required argument \'output-device\' not specified.\n");
-        printf("To see all available arguments use the -h or --help arguments.\n");
+        fprintf(stderr,"Error: Required argument \'output-device\' not specified.\n");
+        fprintf(stderr,"To see all available arguments use the -h or --help arguments.\n");
         exit(EXIT_FAILURE);
     }
 
-    printf("Loading the NvFBC library.\n");
+    fprintf(stderr,"Loading the NvFBC library.\n");
 
     byte *frame;
     void **frame_ptr = (void **) &frame;
@@ -139,8 +145,12 @@ int main(const int argc, char *argv[]) {
         exit(EXIT_SUCCESS);
     }
 
-    printf("Output device: /dev/video%u\n", output_device);
-    printf("Screen: %i\n", capture_settings.screen);
+    if (stdout_output) {
+        fprintf(stderr,"Output device: stdout\n");
+    }
+    else fprintf(stderr,"Output device: /dev/video%u\n", output_device);
+
+    fprintf(stderr,"Screen: %i\n", capture_settings.screen);
 
     if (capture_settings.screen != -1) {
         if (capture_settings.screen >= x_data.count) {
@@ -159,25 +169,28 @@ int main(const int argc, char *argv[]) {
     }
 
     const NvFBC_SessionData nvfbc_session = create_session(nvfbc_data, capture_settings, frame_ptr, pixel_fmt);
-    printf("Opening the V4L2 loopback device.\n");
+    if (!stdout_output) fprintf(stderr,"Opening the V4L2 loopback device.\n");
 
-    const int32_t v4l2_device = open_device(output_device);
-    set_device_format(v4l2_device, nvfbc_data.width, nvfbc_data.height, pixel_fmt, capture_settings.fps);
+    int32_t file_descriptor;
+    if (stdout_output) file_descriptor = fileno(stdout);
+    else {
+        file_descriptor = open_device(output_device);
+        set_device_format(file_descriptor, nvfbc_data.width, nvfbc_data.height, pixel_fmt, capture_settings.fps);
+    }
 
-    printf("Starting capture. Press CTRL+C to exit. \n");
+    fprintf(stderr,"Starting capture. Press CTRL+C to exit. \n");
     const uint32_t buffer_size = get_pixel_buffer_size(nvfbc_data.width, nvfbc_data.height, pixel_fmt);
 
     const NvFBC_SessionData* session_pointer = &nvfbc_session;
     signal(SIGINT, interrupt_signal);
 
-
     YUV_420_Data* yuv_data = NULL;
     if (pixel_fmt == YUV_420) {
         yuv_data = malloc(sizeof(YUV_420_Data));
         memset(yuv_data, 0, sizeof(YUV_420_Data));
-        yuv420_loop(frame_ptr, nvfbc_data, v4l2_device, buffer_size, session_pointer, &yuv_data);
+        yuv420_loop(frame_ptr, nvfbc_data, file_descriptor, buffer_size, session_pointer, &yuv_data);
     }
-    else normal_loop(frame_ptr, v4l2_device, buffer_size, session_pointer);
+    else normal_loop(frame_ptr, file_descriptor, buffer_size, session_pointer);
 
     destroy_session(nvfbc_session);
     if (pixel_fmt == YUV_420) {
@@ -197,7 +210,7 @@ void yuv420_loop(void** frame_ptr, const NvFBC_InitData nvfbc_data, const int32_
     }
 }
 
-inline void normal_loop(void** frame_ptr, const int32_t v4l2_device, const uint32_t buffer_size, const NvFBC_SessionData* session_pointer) {
+void normal_loop(void** frame_ptr, const int32_t v4l2_device, const uint32_t buffer_size, const NvFBC_SessionData* session_pointer) {
     while (quit_program != true) {
         capture_frame(session_pointer);
         write_frame(v4l2_device, frame_ptr, buffer_size);
@@ -205,15 +218,16 @@ inline void normal_loop(void** frame_ptr, const int32_t v4l2_device, const uint3
 }
 
 void show_help() {
-    printf("Usage: nvfbc-v4l2 [options]\n");
-    printf("Options:\n");
-    printf("  -o, --output-device <device>  REQUIRED: Sets the V4L2 output device number.\n");
-    printf("  -s, --screen <screen>         Sets the requested X screen.\n");
-    printf("  -p, --pixel_format <pix_fmt>  Sets the wanted pixel format. Allowed values: 'rgb' (Default), 'yuv420', 'rgba', 'nv12'\n");
-    printf("  -f, --fps <fps>               Sets the frames per second.\n");
-    printf("  -n, --no-push-model           Disables push model.\n");
-    printf("  -d, --direct-capture          Enables direct capture. (warning: causes cursor issues when a screen is selected)\n");
-    printf("  -c, --no-cursor               Hides the cursor.\n");
-    printf("  -l, --list-screens            Lists available screens.\n");
-    printf("  -h, --help                    Shows this help message.\n");
+    fprintf(stderr, "Usage: nvfbc-v4l2 [options]\n");
+    fprintf(stderr,"Options:\n");
+    fprintf(stderr,"  -o, --output-device <device>  REQUIRED: Sets the V4L2 output device number.\n");
+    fprintf(stderr,"  -s, --screen <screen>         Sets the requested X screen.\n");
+    fprintf(stderr,"  -p, --pixel_format <pix_fmt>  Sets the wanted pixel format. Allowed values: 'rgb' (Default), 'yuv420', 'rgba', 'nv12'\n");
+    fprintf(stderr,"  -f, --fps <fps>               Sets the frames per second.\n");
+    fprintf(stderr,"  -r, --stdout                  Write the raw video data to stdout instead of a v4l2 device.\n");
+    fprintf(stderr,"  -n, --no-push-model           Disables push model.\n");
+    fprintf(stderr,"  -d, --direct-capture          Enables direct capture. (warning: causes cursor issues when a screen is selected)\n");
+    fprintf(stderr,"  -c, --no-cursor               Hides the cursor.\n");
+    fprintf(stderr,"  -l, --list-screens            Lists available screens.\n");
+    fprintf(stderr,"  -h, --help                    Shows this help message.\n");
 }

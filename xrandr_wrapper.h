@@ -25,7 +25,7 @@ typedef struct {
     size_t count;
 } X_Data;
 
-inline X_Data get_screens(Display *x_display) {
+X_Data get_screens(Display *x_display) {
     int event_base, error_base;
 
     if (!XRRQueryExtension(x_display, &event_base, &error_base)) {
@@ -87,16 +87,16 @@ inline X_Data get_screens(Display *x_display) {
     return data;
 }
 
-inline void list_screens(const X_Data x_data) {
+void list_screens(const X_Data x_data) {
     for (int i = 0; i < x_data.count; ++i) {
         const X_Screen screen = x_data.screens[i];
 
-        printf("Monitor %u:\n", i);
-        printf("  Offset X: %u\n", screen.offset_x);
-        printf("  Offset Y: %u\n", screen.offset_y);
-        printf("  Width: %u\n", screen.size_w);
-        printf("  Height: %u\n", screen.size_h);
-        printf("  Output ID: %lu\n", screen.id);
+        fprintf(stderr,"Monitor %u:\n", i);
+        fprintf(stderr,"  Offset X: %u\n", screen.offset_x);
+        fprintf(stderr,"  Offset Y: %u\n", screen.offset_y);
+        fprintf(stderr,"  Width: %u\n", screen.size_w);
+        fprintf(stderr,"  Height: %u\n", screen.size_h);
+        fprintf(stderr,"  Output ID: %lu\n", screen.id);
     }
 }
 
