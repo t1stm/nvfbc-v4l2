@@ -73,7 +73,7 @@ int main(const int argc, char *argv[]) {
             {NULL,             0,                 NULL, 0}
     };
 
-    while ((opt = getopt_long(argc, argv, "o:s:f:ndclhrp:", long_options, NULL)) != -1) {
+    while ((opt = getopt_long(argc, argv, "os:f:ndclhrp:", long_options, NULL)) != -1) {
         int32_t temporary;
         switch (opt) {
             case 0:
