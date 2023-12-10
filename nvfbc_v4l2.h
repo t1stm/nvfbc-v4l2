@@ -3,21 +3,12 @@
 
 #include <stdint.h>
 #include <pthread.h>
-#include <string.h>
-#include <assert.h>
 #include <malloc.h>
 #include <math.h>
 #include <dlfcn.h>
 #include <stdlib.h>
 
-#include <GL/gl.h>
-#include <GL/glx.h>
-#include <GL/glext.h>
-#include <GL/glxext.h>
-
 #include <X11/Xlib.h>
-#include <X11/Xatom.h>
-#include <X11/extensions/Xrandr.h>
 
 #include "NvFBC.h"
 #include "defines.h"
@@ -55,7 +46,7 @@ static void *nvfbc_lib = NULL;
 static PNVFBCCREATEINSTANCE NvFBCCreateInstance_ptr = NULL;
 static NVFBC_API_FUNCTION_LIST function_list;
 
-static enum _NVFBC_BUFFER_FORMAT get_nvfbc_pixel_format(enum Pixel_Format pixel_fmt) {
+static enum _NVFBC_BUFFER_FORMAT get_nvfbc_pixel_format(const enum Pixel_Format pixel_fmt) {
     switch (pixel_fmt) {
         case NV_12:
         case YUV_420:
@@ -75,7 +66,7 @@ NvFBC_InitData load_libraries();
 NvFBC_SessionData
 create_session(NvFBC_InitData init_data, Capture_Settings capture_settings, void **frame_ptr, enum Pixel_Format pixel_fmt);
 
-void capture_frame(NvFBC_SessionData *session_data);
+void capture_frame(const NvFBC_SessionData *session_data);
 
 void destroy_session(NvFBC_SessionData session_data);
 

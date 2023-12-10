@@ -10,16 +10,15 @@
 
 #include <linux/videodev2.h>
 #include <linux/v4l2-common.h>
-#include <linux/v4l2-controls.h>
 #include <assert.h>
 
 #include "defines.h"
 
-int32_t open_device(int32_t output_device) {
+inline int32_t open_device(const int32_t output_device) {
     // /dev/video###
     char device_location[13];
     sprintf(device_location, "/dev/video%u", output_device);
-    int32_t file_descriptor = open((const char *) device_location, O_RDWR);
+    const int32_t file_descriptor = open((const char *) device_location, O_RDWR);
     if (file_descriptor == -1) {
         fprintf(stderr, "Unable to open v4l2loopback device: '/dev/video%u'\n", output_device);
         exit(EXIT_FAILURE);
@@ -28,7 +27,7 @@ int32_t open_device(int32_t output_device) {
     return file_descriptor;
 }
 
-static uint32_t get_v4l2_pixel_fmt(enum Pixel_Format pixel_fmt) {
+static uint32_t get_v4l2_pixel_fmt(const enum Pixel_Format pixel_fmt) {
     switch (pixel_fmt) {
         case NV_12:
             return V4L2_PIX_FMT_NV12;
@@ -44,7 +43,7 @@ static uint32_t get_v4l2_pixel_fmt(enum Pixel_Format pixel_fmt) {
     }
 }
 
-void set_device_format(int32_t file_descriptor, uint32_t width, uint32_t height, enum Pixel_Format pixel_fmt, uint32_t framerate) {
+inline void set_device_format(int32_t file_descriptor, uint32_t width, uint32_t height, enum Pixel_Format pixel_fmt, uint32_t framerate) {
     assert(file_descriptor >= 0);
 
     struct v4l2_capability capability;
@@ -98,7 +97,7 @@ void set_device_format(int32_t file_descriptor, uint32_t width, uint32_t height,
     exit(EXIT_FAILURE);
 }
 
-void write_frame(int32_t file_descriptor, void **frame, uint32_t size) {
+inline void write_frame(const int32_t file_descriptor, void **frame, const uint32_t size) {
     write(file_descriptor, *frame, size);
 }
 

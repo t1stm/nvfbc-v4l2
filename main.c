@@ -16,7 +16,7 @@ void interrupt_signal() {
     quit_program = true;
 }
 
-enum Pixel_Format string_to_pixel_fmt(char* string) {
+enum Pixel_Format string_to_pixel_fmt(const char* string) {
     return
     strcmp(string, "rgb") == 0 ? RGB_24 :
     strcmp(string, "yuv420") == 0 ? YUV_420 :
@@ -24,17 +24,17 @@ enum Pixel_Format string_to_pixel_fmt(char* string) {
     strcmp(string, "nv12") == 0 ? NV_12 : Pixel_Fmt_None;
 }
 
-uint32_t get_pixel_buffer_size(uint32_t width, uint32_t height, enum Pixel_Format pixel_fmt) {
+uint32_t get_pixel_buffer_size(const uint32_t width, const uint32_t height, const enum Pixel_Format pixel_fmt) {
     assert(pixel_fmt != Pixel_Fmt_None);
 
     switch (pixel_fmt) {
         case NV_12:
         case YUV_420:
-            return lround((width * height) * 1.5);
+            return lround(width * height * 1.5);
         case RGB_24:
-            return (width * height) * 3;
+            return width * height * 3;
         case RGBA_444:
-            return (width * height) * 4;
+            return width * height * 4;
 
         default:
             fprintf(stderr, "Invalid pixel format in buffer size calculator.\n");
@@ -42,7 +42,10 @@ uint32_t get_pixel_buffer_size(uint32_t width, uint32_t height, enum Pixel_Forma
     }
 }
 
-int main(int argc, char *argv[]) {
+void yuv420_loop(void** frame_ptr, NvFBC_InitData nvfbc_data, int32_t v4l2_device, uint32_t buffer_size, const NvFBC_SessionData* session_pointer, YUV_420_Data** yuv_data);
+inline void normal_loop(void** frame_ptr, int32_t v4l2_device, uint32_t buffer_size, const NvFBC_SessionData* session_pointer);
+
+int main(const int argc, char *argv[]) {
     bool list = false;
     int32_t opt;
     int32_t output_device = -1;
@@ -55,7 +58,7 @@ int main(int argc, char *argv[]) {
 
     enum Pixel_Format pixel_fmt = RGB_24;
 
-    struct option long_options[] = {
+    const struct option long_options[] = {
             {"output-device",  required_argument, NULL, 'o'},
             {"screen",         required_argument, NULL, 's'},
             {"pixel_format",   required_argument, NULL, 'p'},
@@ -129,7 +132,7 @@ int main(int argc, char *argv[]) {
     void **frame_ptr = (void **) &frame;
 
     NvFBC_InitData nvfbc_data = load_libraries();
-    X_Data x_data = get_screens(nvfbc_data.X_display);
+    const X_Data x_data = get_screens(nvfbc_data.X_display);
 
     if (list == true) {
         list_screens(x_data);
@@ -145,7 +148,7 @@ int main(int argc, char *argv[]) {
             exit(EXIT_FAILURE);
         }
 
-        X_Screen selected_screen = x_data.screens[capture_settings.screen];
+        const X_Screen selected_screen = x_data.screens[capture_settings.screen];
 
         nvfbc_data.offset_x = selected_screen.offset_x;
         nvfbc_data.offset_y = selected_screen.offset_y;
@@ -155,39 +158,50 @@ int main(int argc, char *argv[]) {
         nvfbc_data.display_id = selected_screen.id;
     }
 
-    NvFBC_SessionData nvfbc_session = create_session(nvfbc_data, capture_settings, frame_ptr, pixel_fmt);
+    const NvFBC_SessionData nvfbc_session = create_session(nvfbc_data, capture_settings, frame_ptr, pixel_fmt);
     printf("Opening the V4L2 loopback device.\n");
 
-    int32_t v4l2_device = open_device(output_device);
+    const int32_t v4l2_device = open_device(output_device);
     set_device_format(v4l2_device, nvfbc_data.width, nvfbc_data.height, pixel_fmt, capture_settings.fps);
 
     printf("Starting capture. Press CTRL+C to exit. \n");
-    uint32_t buffer_size = get_pixel_buffer_size(nvfbc_data.width, nvfbc_data.height, pixel_fmt);
+    const uint32_t buffer_size = get_pixel_buffer_size(nvfbc_data.width, nvfbc_data.height, pixel_fmt);
 
-    NvFBC_SessionData* session_pointer = &nvfbc_session;
+    const NvFBC_SessionData* session_pointer = &nvfbc_session;
     signal(SIGINT, interrupt_signal);
 
+
     YUV_420_Data* yuv_data = NULL;
-    for (;;) {
-        if (quit_program == true) break;
-        capture_frame(session_pointer);
-        if (pixel_fmt == YUV_420) {
-            if (yuv_data == NULL) {
-                yuv_data = (YUV_420_Data*) malloc(sizeof(YUV_420_Data));
-                memset(yuv_data, 0, sizeof(YUV_420_Data));
-            }
-            inplace_nv12_to_yuv420p(*frame_ptr, nvfbc_data.width, nvfbc_data.height, yuv_data);
-        }
-        write_frame(v4l2_device, frame_ptr, buffer_size);
+    if (pixel_fmt == YUV_420) {
+        yuv_data = malloc(sizeof(YUV_420_Data));
+        memset(yuv_data, 0, sizeof(YUV_420_Data));
+        yuv420_loop(frame_ptr, nvfbc_data, v4l2_device, buffer_size, session_pointer, &yuv_data);
     }
+    else normal_loop(frame_ptr, v4l2_device, buffer_size, session_pointer);
 
     destroy_session(nvfbc_session);
-    if (yuv_data != NULL) {
+    if (pixel_fmt == YUV_420) {
         free(yuv_data->u_plane);
         free(yuv_data->y_plane);
         free(yuv_data);
     }
     return EXIT_SUCCESS;
+}
+
+void yuv420_loop(void** frame_ptr, const NvFBC_InitData nvfbc_data, const int32_t v4l2_device,
+              const uint32_t buffer_size, const NvFBC_SessionData* session_pointer, YUV_420_Data** yuv_data) {
+    while (quit_program != true) {
+        capture_frame(session_pointer);
+        inplace_nv12_to_yuv420p(*frame_ptr, nvfbc_data.width, nvfbc_data.height, *yuv_data);
+        write_frame(v4l2_device, frame_ptr, buffer_size);
+    }
+}
+
+inline void normal_loop(void** frame_ptr, const int32_t v4l2_device, const uint32_t buffer_size, const NvFBC_SessionData* session_pointer) {
+    while (quit_program != true) {
+        capture_frame(session_pointer);
+        write_frame(v4l2_device, frame_ptr, buffer_size);
+    }
 }
 
 void show_help() {
