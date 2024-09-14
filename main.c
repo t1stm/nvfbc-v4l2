@@ -45,7 +45,7 @@ uint32_t get_pixel_buffer_size(const uint32_t width, const uint32_t height, cons
 void yuv420_loop(void** frame_ptr, NvFBC_InitData nvfbc_data, int32_t v4l2_device, uint32_t buffer_size, const NvFBC_SessionData* session_pointer, YUV_420_Data** yuv_data);
 void normal_loop(void** frame_ptr, int32_t v4l2_device, uint32_t buffer_size, const NvFBC_SessionData* session_pointer);
 
-int main(const int argc, char *argv[]) {
+int main(const int argc, char* const argv[]) {
     bool list = false;
     bool stdout_output = false;
     int32_t opt;
@@ -62,7 +62,7 @@ int main(const int argc, char *argv[]) {
     const struct option long_options[] = {
             {"output-device",  required_argument, NULL, 'o'},
             {"screen",         required_argument, NULL, 's'},
-            {"pixel_format",   required_argument, NULL, 'p'},
+            {"pixel-format",   required_argument, NULL, 'p'},
             {"fps",            required_argument, NULL, 'f'},
             {"stdout",         no_argument,       NULL, 'r'},
             {"no-push-model",  no_argument,       NULL, 'n'},
@@ -73,7 +73,10 @@ int main(const int argc, char *argv[]) {
             {NULL,             0,                 NULL, 0}
     };
 
-    while ((opt = getopt_long(argc, argv, "os:f:ndclhrp:", long_options, NULL)) != -1) {
+    // shortopts explained
+    // after each .val you can notice a ':'
+    // this means that the argument is required.
+    while ((opt = getopt_long(argc, argv, "o:s:p:f:rndclh", long_options, NULL)) != -1) {
         int32_t temporary;
         switch (opt) {
             case 0:

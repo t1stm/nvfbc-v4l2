@@ -74,7 +74,8 @@ NvFBC_SessionData create_session(NvFBC_InitData init_data, Capture_Settings capt
 
     nvfbc_status = function_list.nvFBCCreateHandle(&fbc_handle, &create_handle_params);
     if (nvfbc_status != NVFBC_SUCCESS) {
-        fprintf(stderr, "%s\n", function_list.nvFBCGetLastErrorStr(fbc_handle));
+        fprintf(stderr, "Failed to create a NvFBC handle with the following error type: '%i', and error message '%s'. "
+                        "Exiting. \n", nvfbc_status, function_list.nvFBCGetLastErrorStr(fbc_handle));
         exit(EXIT_FAILURE);
     }
 
@@ -84,12 +85,12 @@ NvFBC_SessionData create_session(NvFBC_InitData init_data, Capture_Settings capt
 
     nvfbc_status = function_list.nvFBCGetStatus(fbc_handle, &status_params);
     if (nvfbc_status != NVFBC_SUCCESS) {
-        fprintf(stderr, "%s\n", function_list.nvFBCGetLastErrorStr(fbc_handle));
+        fprintf(stderr, "NvFBC failed to get the display driver's state with the following error: '%s'. Exiting. \n", function_list.nvFBCGetLastErrorStr(fbc_handle));
         exit(EXIT_FAILURE);
     }
 
     if (status_params.bCanCreateNow == NVFBC_FALSE) {
-        fprintf(stderr, "It is not possible to create a capture session on this system.\n");
+        fprintf(stderr, "Unable to create a capture session on this system currently. Exiting. \n");
         exit(EXIT_FAILURE);
     }
 
