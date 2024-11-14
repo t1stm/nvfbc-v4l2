@@ -74,6 +74,18 @@ NvFBC_SessionData create_session(NvFBC_InitData init_data, Capture_Settings capt
 
     nvfbc_status = function_list.nvFBCCreateHandle(&fbc_handle, &create_handle_params);
     if (nvfbc_status != NVFBC_SUCCESS) {
+        fprintf(stderr, "Failed to create a NvFBC handle normally (%i), trying with interop key. \n",
+                nvfbc_status);
+        const uint8_t enable_key[] = {0xac, 0x10, 0xc9, 0x2e, 0xa5, 0xe6,
+                                      0x87, 0x4f,0x8f,0x4b, 0xf4, 0x61,
+                                      0xf8,0x56, 0x27, 0xe9};
+        create_handle_params.privateData = enable_key;
+        create_handle_params.privateDataSize = 16;
+
+        nvfbc_status = function_list.nvFBCCreateHandle(&fbc_handle, &create_handle_params);
+    }
+
+    if (nvfbc_status != NVFBC_SUCCESS) {
         fprintf(stderr, "Failed to create a NvFBC handle with the following error type: '%i', and error message '%s'. "
                         "Exiting. \n", nvfbc_status, function_list.nvFBCGetLastErrorStr(fbc_handle));
         exit(EXIT_FAILURE);
@@ -85,7 +97,8 @@ NvFBC_SessionData create_session(NvFBC_InitData init_data, Capture_Settings capt
 
     nvfbc_status = function_list.nvFBCGetStatus(fbc_handle, &status_params);
     if (nvfbc_status != NVFBC_SUCCESS) {
-        fprintf(stderr, "NvFBC failed to get the display driver's state with the following error: '%s'. Exiting. \n", function_list.nvFBCGetLastErrorStr(fbc_handle));
+        fprintf(stderr, "NvFBC failed to get the display driver's state with the following error: '%s'. Exiting. \n",
+                function_list.nvFBCGetLastErrorStr(fbc_handle));
         exit(EXIT_FAILURE);
     }
 
@@ -147,7 +160,7 @@ void destroy_session(const NvFBC_SessionData session_data) {
     destroy_capture_params.dwVersion = NVFBC_DESTROY_CAPTURE_SESSION_PARAMS_VER;
 
     NVFBCSTATUS nvfbc_status = function_list.nvFBCDestroyCaptureSession(
-        session_data.fbc_handle, &destroy_capture_params);
+            session_data.fbc_handle, &destroy_capture_params);
     if (nvfbc_status != NVFBC_SUCCESS) {
         fprintf(stderr, "%s\n", function_list.nvFBCGetLastErrorStr(session_data.fbc_handle));
         exit(EXIT_FAILURE);
