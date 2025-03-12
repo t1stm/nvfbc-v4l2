@@ -102,6 +102,12 @@ void set_device_format(int32_t file_descriptor, uint32_t width, uint32_t height,
     struct v4l2_format format;
     struct v4l2_streamparm parm;
 
+    V4L2_Version current_version = {};
+    if (!read_v4l2_version(&current_version)){
+        fprintf(stderr, "Failed to read the v4l2loopback device's version number.\n");
+        goto fail_and_log;
+    }
+
     if (ioctl(file_descriptor, VIDIOC_QUERYCAP, &capability) < 0) {
         fprintf(stderr, "Failed to query the v4l2loopback device.\n");
         goto fail_and_log;
@@ -135,7 +141,7 @@ void set_device_format(int32_t file_descriptor, uint32_t width, uint32_t height,
         goto fail_and_log;
     }
 
-    if (ioctl(file_descriptor, VIDIOC_STREAMON, &parm) < 0) {
+    if (is_v4l2_version_new(&current_version) && ioctl(file_descriptor, VIDIOC_STREAMON, &parm) < 0) {
         fprintf(stderr, "Failed to start streaming.\n");
         goto fail_and_log;
     }
