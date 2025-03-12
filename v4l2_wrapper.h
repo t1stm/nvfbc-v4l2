@@ -57,6 +57,44 @@ static uint32_t get_v4l2_pixel_fmt(const enum Pixel_Format pixel_fmt) {
     }
 }
 
+bool read_v4l2_version(V4L2_Version *version) {
+    int fd = open(V4L2_LOOPBACK_MODULE_VERSION_LOCATION, O_RDONLY);
+    if (fd < 0)
+        return false;
+
+    char buffer[32];
+    ssize_t bytes_read = read(fd, buffer, sizeof (buffer) - 1);
+    close(fd);
+
+    if (bytes_read <= 0)
+        return false;
+
+    uint32_t major, minor, bugfix;
+    int parsed = sscanf(buffer, "%u.%u.%u",
+                        &major,
+                        &minor,
+                        &bugfix);
+
+    if (parsed != 3)
+        return false;
+
+    version->major = major;
+    version->minor = minor;
+    version->bugfix = bugfix;
+
+    return true;
+}
+
+bool is_v4l2_version_new(V4L2_Version *version) {
+    V4L2_Version v = *version;
+    V4L2_Version standard = NEW_STANDARD_VERSION;
+
+    return
+            standard.major >= v.major &&
+            (standard.minor == v.minor && standard.bugfix > v.bugfix) ||
+            (standard.minor > v.minor);
+}
+
 void set_device_format(int32_t file_descriptor, uint32_t width, uint32_t height, enum Pixel_Format pixel_fmt, uint32_t framerate) {
     assert(file_descriptor >= 0);
 
