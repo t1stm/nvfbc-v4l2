@@ -91,8 +91,8 @@ bool is_v4l2_version_new(V4L2_Version *version) {
 
     return
             standard.major >= v.major &&
-            (standard.minor == v.minor && standard.bugfix > v.bugfix) ||
-            (standard.minor > v.minor);
+            (standard.minor == v.minor && standard.bugfix < v.bugfix) ||
+            (standard.minor < v.minor);
 }
 
 void set_device_format(int32_t file_descriptor, uint32_t width, uint32_t height, enum Pixel_Format pixel_fmt, uint32_t framerate) {
@@ -141,7 +141,7 @@ void set_device_format(int32_t file_descriptor, uint32_t width, uint32_t height,
         goto fail_and_log;
     }
 
-    if (is_v4l2_version_new(&current_version) && ioctl(file_descriptor, VIDIOC_STREAMON, &parm) < 0) {
+    if (!is_v4l2_version_new(&current_version) && ioctl(file_descriptor, VIDIOC_STREAMON, &parm) < 0) {
         fprintf(stderr, "Failed to start streaming.\n");
         goto fail_and_log;
     }
