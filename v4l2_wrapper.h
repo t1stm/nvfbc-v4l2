@@ -14,6 +14,20 @@
 
 #include "defines.h"
 
+typedef struct {
+    uint32_t major;
+    uint32_t minor;
+    uint32_t bugfix;
+} V4L2_Version;
+
+const V4L2_Version NEW_STANDARD_VERSION = {
+        .major = 0,
+        .minor = 13,
+        .bugfix = 2
+};
+
+const char *V4L2_LOOPBACK_MODULE_VERSION_LOCATION = "/sys/module/v4l2loopback/version";
+
 int32_t open_device(const int32_t output_device) {
     // /dev/video###
     char device_location[13];
