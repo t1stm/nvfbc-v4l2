@@ -177,7 +177,7 @@ void destroy_session(const NvFBC_SessionData session_data) {
     }
 }
 
-void capture_frame(const NvFBC_SessionData *session_data) {
+void capture_frame(const NvFBC_SessionData *session_data, u_int32_t timeout_ms) {
     NVFBC_TOSYS_GRAB_FRAME_PARAMS grab_params;
     NVFBC_FRAME_GRAB_INFO frame_info;
 
@@ -188,6 +188,9 @@ void capture_frame(const NvFBC_SessionData *session_data) {
 
     // Block until screen or mouse update.
     grab_params.dwFlags = NVFBC_TOSYS_GRAB_FLAGS_NOFLAGS;
+
+    // Sets the timeout to the current capture framerate.
+    grab_params.dwTimeoutMs = timeout_ms;
 
     // Frame info.
     grab_params.pFrameGrabInfo = &frame_info;

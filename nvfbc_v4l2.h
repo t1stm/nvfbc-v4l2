@@ -66,7 +66,7 @@ NvFBC_InitData load_libraries();
 NvFBC_SessionData
 create_session(NvFBC_InitData init_data, Capture_Settings capture_settings, void **frame_ptr, enum Pixel_Format pixel_fmt);
 
-void capture_frame(const NvFBC_SessionData *session_data);
+void capture_frame(const NvFBC_SessionData *session_data, uint32_t timeout_ms);
 
 void destroy_session(NvFBC_SessionData session_data);
 

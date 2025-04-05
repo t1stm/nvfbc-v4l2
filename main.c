@@ -42,8 +42,8 @@ uint32_t get_pixel_buffer_size(const uint32_t width, const uint32_t height, cons
     }
 }
 
-void yuv420_loop(void** frame_ptr, NvFBC_InitData nvfbc_data, int32_t v4l2_device, uint32_t buffer_size, const NvFBC_SessionData* session_pointer, YUV_420_Data** yuv_data);
-void normal_loop(void** frame_ptr, int32_t v4l2_device, uint32_t buffer_size, const NvFBC_SessionData* session_pointer);
+void yuv420_loop(void** frame_ptr, NvFBC_InitData nvfbc_data, int32_t v4l2_device, uint32_t buffer_size, const NvFBC_SessionData* session_pointer, YUV_420_Data** yuv_data, Capture_Settings* capture_settings);
+void normal_loop(void** frame_ptr, int32_t v4l2_device, uint32_t buffer_size, const NvFBC_SessionData* session_pointer, Capture_Settings* capture_settings);
 
 int main(const int argc, char* const argv[]) {
     bool list = false;
@@ -191,9 +191,9 @@ int main(const int argc, char* const argv[]) {
     if (pixel_fmt == YUV_420) {
         yuv_data = malloc(sizeof(YUV_420_Data));
         memset(yuv_data, 0, sizeof(YUV_420_Data));
-        yuv420_loop(frame_ptr, nvfbc_data, file_descriptor, buffer_size, session_pointer, &yuv_data);
+        yuv420_loop(frame_ptr, nvfbc_data, file_descriptor, buffer_size, session_pointer, &yuv_data, &capture_settings);
     }
-    else normal_loop(frame_ptr, file_descriptor, buffer_size, session_pointer);
+    else normal_loop(frame_ptr, file_descriptor, buffer_size, session_pointer, &capture_settings);
 
     destroy_session(nvfbc_session);
     if (pixel_fmt == YUV_420) {
@@ -205,17 +205,21 @@ int main(const int argc, char* const argv[]) {
 }
 
 void yuv420_loop(void** frame_ptr, const NvFBC_InitData nvfbc_data, const int32_t v4l2_device,
-              const uint32_t buffer_size, const NvFBC_SessionData* session_pointer, YUV_420_Data** yuv_data) {
+              const uint32_t buffer_size, const NvFBC_SessionData* session_pointer, YUV_420_Data** yuv_data, Capture_Settings* capture_settings) {
+    uint32_t timeout = (uint32_t) lround(1000.0 / capture_settings->fps);
+
     while (quit_program != true) {
-        capture_frame(session_pointer);
+        capture_frame(session_pointer, timeout);
         inplace_nv12_to_yuv420p(*frame_ptr, nvfbc_data.width, nvfbc_data.height, *yuv_data);
         write_frame(v4l2_device, frame_ptr, buffer_size);
     }
 }
 
-void normal_loop(void** frame_ptr, const int32_t v4l2_device, const uint32_t buffer_size, const NvFBC_SessionData* session_pointer) {
+void normal_loop(void** frame_ptr, const int32_t v4l2_device, const uint32_t buffer_size, const NvFBC_SessionData* session_pointer, Capture_Settings* capture_settings) {
+    uint32_t timeout = (uint32_t) lround(1000.0 / capture_settings->fps);
+
     while (quit_program != true) {
-        capture_frame(session_pointer);
+        capture_frame(session_pointer, timeout);
         write_frame(v4l2_device, frame_ptr, buffer_size);
     }
 }
