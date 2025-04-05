@@ -186,8 +186,9 @@ void capture_frame(const NvFBC_SessionData *session_data) {
 
     grab_params.dwVersion = NVFBC_TOSYS_GRAB_FRAME_PARAMS_VER;
 
-    // Block until screen or mouse update.
-    grab_params.dwFlags = NVFBC_TOSYS_GRAB_FLAGS_NOFLAGS;
+    // Capture frames always, even if previous frame wasn't modified.
+    // This fixes an issue with Chromium that disables the camera when a timeout is reached.
+    grab_params.dwFlags = NVFBC_TOSYS_GRAB_FLAGS_NOWAIT;
 
     // Frame info.
     grab_params.pFrameGrabInfo = &frame_info;
