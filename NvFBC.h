@@ -4,7 +4,7 @@
  * This file contains the interface constants, structure definitions and
  * function prototypes defining the NvFBC API for Linux.
  *
- * Copyright (c) 2013-2020, NVIDIA CORPORATION. All rights reserved.
+ * Copyright (c) 2013-2025, NVIDIA CORPORATION. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -77,12 +77,22 @@
  * - xorg-server >= 1.3:
  *   Optional.  Required for push model to work properly.
  *
+ * - libpipewire-0.3.so.0 >= 1.0.0:
+ *   Optional.  Required for the PipeWire capture backend.
+ *
+ * - libdbus-1.so.3 >= 1.14.0:
+ *   Optional.  Required for communicating with XDG Desktop Portal.
+ *
+ * - libdrm.so.2 >= 2.4.110:
+ *   Optional.  But required by the PipeWire capture backend for using DRM syncobjs.
+ *
  * Note that all optional dependencies are dlopen()'d at runtime.  Failure to
  * load an optional library is not fatal.
  */
 
 /*!
  * \defgroup FBC_CHANGES ChangeLog
+ * @{
  *
  * NvFBC Linux API version 0.1
  * - Initial BETA release.
@@ -166,10 +176,45 @@
  * - Added 'bAllowDirectCapture' to NVFBC_CREATE_CAPTURE_SESSION_PARAMS.
  * - Added 'bDirectCaptured' to NVFBC_FRAME_GRAB_INFO.
  * - Added 'bRequiredPostProcessing' to NVFBC_FRAME_GRAB_INFO.
+ *
+ * NvFBC Linux API version 1.9
+ * - Added support for capturing frames from PipeWire, which allows NvFBC to be
+ *   used on Wayland.
+ * - Added 'nvFBCCompositeCursor' API.
+ * - Added 'bCursorVisible' to NVFBC_FRAME_GRAB_INFO.
+ * - Added 'bCursorComposited' to NVFBC_FRAME_GRAB_INFO.
+ * - Added 'bUseEGL' to NVFBC_CREATE_HANDLE_PARAMS.
+ * - Added 'eBackend' to NVFBC_CREATE_HANDLE_PARAMS.
+ * - Added 'portalRestoreToken' to NVFBC_CREATE_HANDLE_PARAMS.
+ * - Added 'portalRestoreToken' to NVFBC_GET_STATUS_PARAMS.
+ * - Added support for the direct capture backend, which allows NvFBC direct
+ *   capture of a Vulkan graphics application by its pid.
+ * - Added 'dwPid' to NVFBC_GET_STATUS_PARAMS.
+ * - Added 'dwDbusTimeoutMs' to NVFBC_GET_STATUS_PARAMS.
+ * - Added 'dwCaptureTargetCount' to NVFBC_GET_STATUS_PARAMS.
+ * - Added 'captureTargetSizes' to NVFBC_GET_STATUS_PARAMS.
+ * - Added 'dwPid' to NVFBC_CREATE_CAPTURE_SESSION_PARAMS.
+ * - Added 'dwDbusTimeoutMs' to NVFBC_CREATE_CAPTURE_SESSION_PARAMS.
+ * - Added 'dwCaptureTarget' to NVFBC_CREATE_CAPTURE_SESSION_PARAMS.
+ * @}
  */
 
 /*!
- * \defgroup FBC_MODES Capture Modes
+ * \defgroup FBC_CAPTURE_BACKENDS
+ * @{
+ *
+ * NvFBC supports multiple capture backends. The capture backend is selected
+ * through NVFBC_CREATE_HANDLE_PARAMS::eBackend.
+ *
+ * NVFBC_BACKEND_AUTO
+ *
+ * Automatically select the backend per the below logic:
+ *   - NVFBC_BACKEND_PIPEWIRE if the XDG_SESSION_TYPE envvar is set to "wayland".
+ *   - Otherwise, NVFBC_BACKEND_X11 if the DISPLAY envvar is set.
+ *   - Otherwise, NVFBC_BACKEND_DIRECT.
+ *
+ *
+ * NVFBC_BACKEND_X11
  *
  * When creating a capture session, NvFBC instantiates a capture subsystem
  * living in the NVIDIA X driver.
@@ -185,7 +230,7 @@
  *
  * NvFBC can also attach itself to a fullscreen unoccluded application and have
  * it copy its frames directly into a buffer owned by NvFBC upon present. This
- * mode bypasses the X server.
+ * mode bypasses the X server for generating the frame.
  * See NVFBC_CREATE_CAPTURE_SESSION_PARAMS::bAllowDirectCapture.
  *
  * NvFBC is designed to capture frames with as few copies as possible. The
@@ -194,6 +239,68 @@
  *
  * Depending on the configuration of a capture session, an extra copy (rendering
  * pass) may be needed. See the 'Post Processing' section.
+ *
+ *
+ * NVFBC_BACKEND_PIPEWIRE
+ *
+ * The PipeWire backend uses the XDG Desktop Portal to request a PipeWire node
+ * from the running compositor. The compositor may show a dialog on the screen
+ * that allows the users to choose the screen they want to record. When NvFBC
+ * has a PipeWire node, it reserves the images received via PipeWire to be
+ * grabbed by the capture session.
+ *
+ * It has the following limitations:
+ *   - Direct capture mode does not have an effect.
+ *   - Since the PipeWire backend does not have a compositor subsystem, push
+ *     model is not supported.
+ *   - Calling NvFBCCompositeCursor() while using this backend is not
+ *     supported. The cursor composition could still be controlled using the
+ *     bWithCursor field of the NVFBC_CREATE_CAPTURE_SESSION_PARAMS struct.
+ *   - NvFBCGetStatus() cannot get the screen size before a capture session is
+ *     created.
+ *   - It is tested on KWin 6.0 and Mutter 46. Other compositors or the earlier
+ *     versions of these compositors are likely incompatible.
+ *
+ *
+ * NVFBC_BACKEND_DIRECT
+ *
+ * The direct capture backend lets an NvFBC client contact a Vulkan application
+ * through its pid via DBus without involving a display server.
+ *
+ * NvFBC uses the system bus and requires the below DBus configuration snippet
+ * in /etc/dbus-1/system.d/nvidia-dbus.conf:
+ *
+ * \verbatim
+ * <busconfig>
+ *   <type>system</type>
+ *   <policy context="default">
+ *     <allow own_prefix="nvidia.nvfbc"/>
+ *     <allow send_requested_reply="true" send_type="method_return"/>
+ *     <allow send_requested_reply="true" send_type="error"/>
+ *     <allow receive_requested_reply="true" receive_type="method_return"/>
+ *     <allow receive_requested_reply="true" receive_type="error"/>
+ *     <allow send_destination_prefix="nvidia.nvfbc"/>
+ *   </policy>
+ * </busconfig>
+ * \endverbatim
+ *
+ * Direct capture works as described in
+ * NVFBC_CREATE_CAPTURE_SESSION_PARAMS::bAllowDirectCapture, except there is no
+ * requirement that the application must be fullscreen. The direct capture
+ * backend can capture occluded applications, provided that they are still
+ * presenting frames.
+ *
+ * The X11, Wayland, and Direct-to-Display Vulkan WSI platforms are supported.
+ * OpenGL applications are not currently supported.
+ *
+ * Note that applications poll DBus messages once per frame. An application not
+ * presenting frames may delay processing DBus requests.
+ *
+ * The direct capture backend has the following limitations:
+ *   - Only supports NVFBC_CREATE_CAPTURE_SESSION_PARAMS::bPushModel.
+ *   - Cannot composite a mouse cursor.
+ *   - Cannot resize frames or capture a subregion.
+ * @}
  */
 
 /*!
@@ -262,7 +369,7 @@ extern "C" {
 /*!
  * NvFBC API minor version.
  */
-#define NVFBC_VERSION_MINOR 8
+#define NVFBC_VERSION_MINOR 9
 
 /*!
  * NvFBC API version.
@@ -381,6 +488,23 @@ typedef enum _NVFBCSTATUS
      * This indicates a Vulkan error.
      */
     NVFBC_ERR_VULKAN          = 17,
+    /*!
+     * This indicates an EGL error.
+     */
+    NVFBC_ERR_EGL             = 18,
+    /*!
+     * This indicates a D-Bus error.
+     */
+    NVFBC_ERR_DBUS            = 19,
+    /*!
+     * This indicates a PipeWire error.
+     */
+    NVFBC_ERR_PIPEWIRE        = 20,
+    /*!
+     * This indicates a DRM (Direct Rendering Manager) error.
+     */
+    NVFBC_ERR_DRM             = 21,
+
 } NVFBCSTATUS;
 
 /*!
@@ -503,6 +627,29 @@ typedef enum _NVFBC_BUFFER_FORMAT
      */
     NVFBC_BUFFER_FORMAT_BGRA,
 } NVFBC_BUFFER_FORMAT;
+
+/*!
+ * Backend type describes the source an NvFBC session receives the frames from.
+ */
+typedef enum _NVFBC_BACKEND
+{
+    /*!
+     * The backend will be selected by NvFBC.
+     */
+    NVFBC_BACKEND_AUTO = 0,
+    /*!
+     * X11 backend will be used.
+     */
+    NVFBC_BACKEND_X11,
+    /*!
+     * PipeWire backend will be used.
+     */
+    NVFBC_BACKEND_PIPEWIRE,
+    /*!
+     * Direct backend will be used.
+     */
+    NVFBC_BACKEND_DIRECT,
+} NVFBC_BACKEND;
 
 #define NVFBC_BUFFER_FORMAT_YUV420P NVFBC_BUFFER_FORMAT_NV12
 
@@ -641,7 +788,25 @@ typedef struct _NVFBC_FRAME_GRAB_INFO
      * See NVFBC_CREATE_CAPTURE_SESSION_PARAMS::bAllowDirectCapture.
      */
     NVFBC_BOOL bDirectCapture;
+    /*
+     * [out] Whether the HW cursor is currently visible.
+     */
+    NVFBC_BOOL bCursorVisible;
+    /*
+     * [out] Whether NvFBC composited the cursor to the frame.
+     */
+    NVFBC_BOOL bCursorComposited;
 } NVFBC_FRAME_GRAB_INFO;
+
+/*!
+ * Maximum size in bytes of an allowed XDG Desktop Portal session restore token.
+ */
+#define NVFBC_PORTAL_RESTORE_TOKEN_LEN 64
+
+/*!
+ * Maximum number of capture targets per application.
+ */
+#define NVFBC_DIRECT_MAX_CAPTURE_TARGETS 10
 
 /*!
  * Defines parameters for the CreateHandle() API call.
@@ -677,8 +842,8 @@ typedef struct _NVFBC_CREATE_HANDLE_PARAMS
     /*!
      * [in] GLX context
      *
-     * GLX context that NvFBC should use internally to create pixmaps and
-     * make them current when creating a new capture session.
+     * GLX context that NvFBC should use to create pixmaps and access OpenGL
+     * entry points.
      *
      * Note: NvFBC expects a context created against a GLX_RGBA_TYPE render
      * type.
@@ -697,12 +862,40 @@ typedef struct _NVFBC_CREATE_HANDLE_PARAMS
      *  GLX_BIND_TO_TEXTURE_TARGETS_EXT, GLX_TEXTURE_2D_BIT_EXT
      */
     void *glxFBConfig;
+    /*!
+     * [in] Whether to use EGL as the OpenGL ICD instead of GLX.
+     *
+     * NvFBC uses the EGL_PLATFORM_DEVICE_EXT extension to create a display
+     * device that has no dependency on X.
+     */
+    NVFBC_BOOL bUseEGL;
+    /*!
+     * [in/out] Backend to be used.
+     *
+     * If a specific backend is not set, NvFBC picks one based on the
+     * information available, and updates this field to indicate the chosen
+     * backend.
+     */
+    NVFBC_BACKEND eBackend;
+    /*!
+     * [in] XDG Desktop Portal session restore token.
+     *
+     * This token allows the PipeWire backend to restore a previously created
+     * XDG Desktop Portal screeencasting session. When a screencasting session
+     * is successfully restored, users do not need to grant permission to the
+     * recording application. If a token is provided here, it will be used to
+     * restore a previously created session by the PipeWire backend. If no
+     * token is provided, a new token will be populated by NvFBC in this field
+     * that can be stored by the user and provided later while creating another
+     * NvFBC capture session.
+     */
+    char portalRestoreToken[NVFBC_PORTAL_RESTORE_TOKEN_LEN];
 } NVFBC_CREATE_HANDLE_PARAMS;
 
 /*!
  * NVFBC_CREATE_HANDLE_PARAMS structure version.
  */
-#define NVFBC_CREATE_HANDLE_PARAMS_VER NVFBC_STRUCT_VERSION(NVFBC_CREATE_HANDLE_PARAMS, 2)
+#define NVFBC_CREATE_HANDLE_PARAMS_VER NVFBC_STRUCT_VERSION(NVFBC_CREATE_HANDLE_PARAMS, 3)
 
 /*!
  * Defines parameters for the ::NvFBCDestroyHandle() API call.
@@ -822,12 +1015,54 @@ typedef struct _NVFBC_GET_STATUS_PARAMS
      * Note that VT-switches are considered modesets.
      */
     NVFBC_BOOL bInModeset;
+    /*!
+     * [out] XDG Desktop Portal session restore token.
+     *
+     * This field is populated with XDG Desktop Portal session restore token
+     * when a screencasting session has been succesfully created. For more
+     * information about this session restore token, see
+     * NVFBC_CREATE_HANDLE_PARAMS::restoreToken.
+     */
+    char portalRestoreToken[NVFBC_PORTAL_RESTORE_TOKEN_LEN];
+    /*!
+     * [in] Pid of a Vulkan application to capture.
+     *
+     * Note that the NVFBC_BACKEND_DIRECT backend must have been requested in
+     * NVFBC_CREATE_HANDLE_PARAMS::eBackend.
+     *
+     * The NvFBC client will contact the Vulkan application through DBus to
+     * establish a direct capture session.
+     */
+    uint32_t dwPid;
+    /*!
+     * [in] Timeout for DBus requests in milliseconds.
+     *
+     * Note that a graphics application processes DBus messages once per frame
+     * presentation. An application not presenting any frame may not respond
+     * to this request.
+     *
+     * Pass -1 for infinite. Default: 1000 ms.
+     */
+    int dwDbusTimeoutMs;
+    /*!
+     * [out] Number of targets that can be captured through direct capture.
+     *
+     * Corresponds to the number capture targets owned by the application's
+     * given pid, up to NVFBC_DIRECT_MAX_CAPTURE_TARGETS.
+     */
+    uint32_t dwCaptureTargetCount;
+    /*!
+     * [out] Size of the targets that can be captured through direct capture.
+     *
+     * Corresponds to the targets owned by the application's given pid.
+     */
+    NVFBC_SIZE captureTargetSizes[NVFBC_DIRECT_MAX_CAPTURE_TARGETS];
 } NVFBC_GET_STATUS_PARAMS;
 
 /*!
  * NVFBC_GET_STATUS_PARAMS structure version.
  */
-#define NVFBC_GET_STATUS_PARAMS_VER NVFBC_STRUCT_VERSION(NVFBC_GET_STATUS_PARAMS, 2)
+#define NVFBC_GET_STATUS_PARAMS_VER NVFBC_STRUCT_VERSION(NVFBC_GET_STATUS_PARAMS, 4)
 
 /*!
  * Defines parameters for the ::NvFBCCreateCaptureSession() API call.
@@ -876,6 +1111,10 @@ typedef struct _NVFBC_CREATE_CAPTURE_SESSION_PARAMS
      *
      * Disabling the cursor will not generate new frames when only the cursor
      * is moved.
+     *
+     * Can be modified at runtime with the ::nvFBCCompositeCursor() API.
+     *
+     * The cursor is only composited if visible.
      */
     NVFBC_BOOL bWithCursor;
     /*!
@@ -965,7 +1204,6 @@ typedef struct _NVFBC_CREATE_CAPTURE_SESSION_PARAMS
      * Direct capture is possible under the following conditions:
      * - Direct capture is allowed
      * - Push model is enabled (see NVFBC_CREATE_CAPTURE_SESSION_PARAMS::bPushModel)
-     * - The mouse cursor is not composited (see NVFBC_CREATE_CAPTURE_SESSION_PARAMS::bWithCursor)
      * - No viewport transformation is required. This happens when the remote
      *   desktop is e.g. rotated.
      *
@@ -990,12 +1228,36 @@ typedef struct _NVFBC_CREATE_CAPTURE_SESSION_PARAMS
      * direct capture by checking NVFBC_FRAME_GRAB_INFO::bDirectCapture.
      */
     NVFBC_BOOL bAllowDirectCapture;
+    /*!
+     * [in] Pid of a Vulkan application to capture.
+     *
+     * Note that the NVFBC_BACKEND_DIRECT backend must have been requested in
+     * NVFBC_CREATE_HANDLE_PARAMS::eBackend.
+     *
+     * The NvFBC client will contact the Vulkan application through DBus to
+     * establish a direct capture session.
+     */
+    uint32_t dwPid;
+    /*!
+     * [in] Timeout for DBus requests in milliseconds.
+     *
+     * Note that a graphics application processes DBus messages once per frame
+     * presentation. An application not presenting any frame may not respond
+     * to this request.
+     *
+     * Pass -1 for infinite. Default: 1000 ms.
+     */
+    int dwDbusTimeoutMs;
+    /*!
+     * [in] Index of the target to capture.
+     */
+    uint32_t dwCaptureTarget;
 } NVFBC_CREATE_CAPTURE_SESSION_PARAMS;
 
 /*!
  * NVFBC_CREATE_CAPTURE_SESSION_PARAMS structure version.
  */
-#define NVFBC_CREATE_CAPTURE_SESSION_PARAMS_VER NVFBC_STRUCT_VERSION(NVFBC_CREATE_CAPTURE_SESSION_PARAMS, 6)
+#define NVFBC_CREATE_CAPTURE_SESSION_PARAMS_VER NVFBC_STRUCT_VERSION(NVFBC_CREATE_CAPTURE_SESSION_PARAMS, 7)
 
 /*!
  * Defines parameters for the ::NvFBCDestroyCaptureSession() API call.
@@ -1515,6 +1777,26 @@ typedef struct _NVFBC_TOGL_GRAB_FRAME_PARAMS
  */
 #define NVFBC_TOGL_GRAB_FRAME_PARAMS_VER NVFBC_STRUCT_VERSION(NVFBC_TOGL_GRAB_FRAME_PARAMS, 2)
 
+/*!
+ * Defines parameters for the ::NvFBCCompositeCursor() API call.
+ */
+typedef struct _NVFBC_COMPOSITE_CURSOR_FRAME
+{
+    /*!
+     * [in] Must be set to NVFBC_COMPOSITE_CURSOR_PARAMS_VER.
+     */
+    uint32_t dwVersion;
+    /*!
+     * [in] Whether the mouse cursor should be composited to captured frames.
+     */
+    NVFBC_BOOL bWithCursor;
+} NVFBC_COMPOSITE_CURSOR_PARAMS;
+
+/*!
+ * NVFBC_COMPOSITE_CURSOR_PARAMS structure version.
+ */
+#define NVFBC_COMPOSITE_CURSOR_PARAMS_VER NVFBC_STRUCT_VERSION(NVFBC_COMPOSITE_CURSOR_PARAMS, 1)
+
 /*! @} FBC_STRUCT */
 
 /*!
@@ -1923,6 +2205,28 @@ NVFBCSTATUS NVFBCAPI NvFBCToGLSetUp(const NVFBC_SESSION_HANDLE sessionHandle, NV
 NVFBCSTATUS NVFBCAPI NvFBCToGLGrabFrame(const NVFBC_SESSION_HANDLE sessionHandle, NVFBC_TOGL_GRAB_FRAME_PARAMS *pParams);
 
 /*!
+ * \brief Requests whether the mouse cursor should be composited to captured frames.
+ *
+ * This is equivalent to changing the value of NVFBC_CREATE_CAPTURE_SESSION_PARAMS::bWithCursor
+ * on an existing capture session.
+ *
+ * \param [in] sessionHandle
+ *   FBC session handle.
+ *
+ * \param [in] pParams
+ *   ::NVFBC_COMPOSITE_CURSOR_PARAMS
+ *
+ * \return
+ *   ::NVFBC_SUCCESS \n
+ *   ::NVFBC_ERR_INVALID_HANDLE \n
+ *   ::NVFBC_ERR_API_VERSION \n
+ *   ::NVFBC_ERR_BAD_REQUEST \n
+ *   ::NVFBC_ERR_CONTEXT \n
+ *   ::NVFBC_ERR_INTERNAL
+ */
+NVFBCSTATUS NVFBCAPI NvFBCCompositeCursor(const NVFBC_SESSION_HANDLE sessionHandle, NVFBC_COMPOSITE_CURSOR_PARAMS *pParams);
+
+/*!
  * \cond FBC_PFN
  *
  * Defines API function pointers
@@ -1941,6 +2245,7 @@ typedef NVFBCSTATUS (NVFBCAPI* PNVFBCTOCUDASETUP)(const NVFBC_SESSION_HANDLE ses
 typedef NVFBCSTATUS (NVFBCAPI* PNVFBCTOCUDAGRABFRAME)(const NVFBC_SESSION_HANDLE sessionHandle, NVFBC_TOCUDA_GRAB_FRAME_PARAMS *pParams);
 typedef NVFBCSTATUS (NVFBCAPI* PNVFBCTOGLSETUP)(const NVFBC_SESSION_HANDLE sessionHandle, NVFBC_TOGL_SETUP_PARAMS *pParams);
 typedef NVFBCSTATUS (NVFBCAPI* PNVFBCTOGLGRABFRAME)(const NVFBC_SESSION_HANDLE sessionHandle, NVFBC_TOGL_GRAB_FRAME_PARAMS *pParams);
+typedef NVFBCSTATUS (NVFBCAPI* PNVFBCCOMPOSITECURSOR)(const NVFBC_SESSION_HANDLE sessionHandle, NVFBC_COMPOSITE_CURSOR_PARAMS *pParams);
 
 /// \endcond
 
@@ -1975,6 +2280,7 @@ typedef struct
     void*                                     pad7;                       //!< [out] Retired. Do not use.
     PNVFBCTOGLSETUP                           nvFBCToGLSetUp;             //!< [out] Pointer to ::nvFBCToGLSetup().
     PNVFBCTOGLGRABFRAME                       nvFBCToGLGrabFrame;         //!< [out] Pointer to ::nvFBCToGLGrabFrame().
+    PNVFBCCOMPOSITECURSOR                     nvFBCCompositeCursor;       //!< [out] Pointer to ::nvFBCCompositeCursor().
 } NVFBC_API_FUNCTION_LIST;
 
 /*!

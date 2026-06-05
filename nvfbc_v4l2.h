@@ -2,10 +2,7 @@
 #define NVFBC_V4L2
 
 #include <stdint.h>
-#include <pthread.h>
 #include <malloc.h>
-#include <math.h>
-#include <dlfcn.h>
 #include <stdlib.h>
 
 #include <X11/Xlib.h>
@@ -19,6 +16,12 @@ typedef struct {
     int32_t fps;
     bool push_model;
     bool direct_capture;
+
+    NVFBC_BACKEND backend;
+    uint32_t vulkan_pid;
+    uint32_t vulkan_target_index;
+    const char *xdg_portal_token_path;
+    bool issue_new_xdg_token;
 } Capture_Settings;
 
 typedef struct {
@@ -61,12 +64,20 @@ static enum _NVFBC_BUFFER_FORMAT get_nvfbc_pixel_format(const enum Pixel_Format 
     }
 }
 
-NvFBC_InitData load_libraries();
+
+NVFBC_BACKEND resolve_backend(NVFBC_BACKEND requested);
+
+const char *default_portal_token_path(void);
+
+void list_direct_targets(uint32_t pid);
+
+NvFBC_InitData load_libraries(NVFBC_BACKEND backend);
 
 NvFBC_SessionData
-create_session(NvFBC_InitData init_data, Capture_Settings capture_settings, void **frame_ptr, enum Pixel_Format pixel_fmt);
+create_session(NvFBC_InitData init_data, Capture_Settings capture_settings, void **frame_ptr,
+               enum Pixel_Format pixel_fmt);
 
-void capture_frame(const NvFBC_SessionData *session_data, uint32_t timeout_ms);
+void capture_frame(const NvFBC_SessionData *session_data, uint32_t timeout_ms, NVFBC_FRAME_GRAB_INFO *frame_info);
 
 void destroy_session(NvFBC_SessionData session_data);
 
